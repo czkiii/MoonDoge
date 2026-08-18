@@ -1,9 +1,14 @@
-MOON DOGE PWA
+MOON DOGE
 
-Feltöltés legegyszerűbben:
-1. Töltsd fel a mappa TELJES tartalmát egy statikus webtárhelyre (Netlify Drop, Vercel, GitHub Pages stb.).
-2. Nyisd meg a kapott HTTPS linket Safari-ban iPhone-on.
-3. Safari -> Megosztás -> Hozzáadás a Főképernyőhöz.
-4. Indítsd a Moon Doge ikonnal.
+Cseréld le a GitHub repóban az azonos nevű fájlokat ezekre:
+- index.html
+- manifest.webmanifest
+- sw.js
+- icon-192.png
+- icon-512.png
 
-Fontos: a service worker és a PWA mód HTTPS alatt működik rendesen.
+GitHub Pages maradhat: main / (root)
+
+Ha iPhone-on a régi változat marad cache-ben:
+Safari-ban frissíts rá, vagy zárd be és nyisd újra.
+A service worker most network-first módon frissül.
