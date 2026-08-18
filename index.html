@@ -76,7 +76,7 @@ const CFG={gravity:1480,autoJump:820,airAccel:1220,maxX:535,damping:.915,boostMi
 
 let state='menu',last=performance.now(),platforms=[],particles=[],hazards=[],pickups=[],stars=[],cameraY=0,nextSpawnY=0,highest=0,combo=0,steer=0,keySteer=0,motionEnabled=false;
 let boostReady=true,charging=false,boostCharge=0,boostId=null,shield=0,slowActive=0,hitCooldown=0,directorClock=10,wind=0,windTimer=0,warningTimer=0,currentZone='GROUND';
-let voyagerPassed=false,checkpoint='EARTH',runTime=0,nearMisses=0,dangerStreak=0,surfaceTimer=0,surfaceType='',turbulenceTimer=0,emergencyCooldown=0,eventCooldown=14;
+let voyagerPassed=false,checkpoint='EARTH',runTime=0,nearMisses=0,dangerStreak=0,surfaceTimer=0,surfaceType='',turbulenceTimer=0,emergencyCooldown=0,eventCooldown=14,meteorRecoveryTimer=0,meteorDestroyed=0,meteorEventCap=2;
 const doge={x:0,y:0,w:54,h:52,vx:0,vy:0,rot:0,spin:0,faceTimer:0,abducted:0};
 const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,sy=y=>y-cameraY;
 function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fill()}
@@ -106,7 +106,7 @@ function bg(a){let z=zone(a);if(z==='GROUND')return['#8fd7ff','#e9f8ff'];if(z===
 function reset(){
   platforms=[];particles=[];hazards=[];pickups=[];stars=[];cameraY=0;nextSpawnY=0;highest=0;combo=0;steer=0;keySteer=0;boostReady=true;charging=false;boostCharge=0;
   shield=0;slowActive=0;hitCooldown=0;directorClock=10;wind=0;windTimer=0;warningTimer=0;currentZone='GROUND';voyagerPassed=false;checkpoint='EARTH';runTime=0;nearMisses=0;dangerStreak=0;
-  surfaceTimer=0;surfaceType='';turbulenceTimer=0;emergencyCooldown=0;eventCooldown=14;
+  surfaceTimer=0;surfaceType='';turbulenceTimer=0;emergencyCooldown=0;eventCooldown=14;meteorRecoveryTimer=0;meteorDestroyed=0;meteorEventCap=2;
   doge.x=W/2-27;doge.y=PLAY_H-154;doge.vx=0;doge.vy=0;doge.rot=0;doge.spin=0;doge.faceTimer=0;doge.abducted=0;
   platforms.push({x:W/2-112,y:PLAY_H-72,w:224,h:22,type:'ground',baseX:W/2-112,t:0,dead:false,angle:0,angVel:0,hits:0});
   nextSpawnY=PLAY_H-150;for(let i=0;i<50;i++)spawnPlatform();for(let i=0;i<150;i++)stars.push({x:Math.random()*W,y:Math.random()*PLAY_H,r:Math.random()*1.7+.2});updateBoostUI()
@@ -155,12 +155,31 @@ function spawnPlane(){let l=Math.random()<.5;hazards.push({type:'plane',x:l?-150
 function spawnRocket(){let l=Math.random()<.5;hazards.push({type:'rocket',x:l?rand(30,W*.4):rand(W*.6,W-30),y:cameraY+PLAY_H+70,vx:rand(-80,80),vy:-rand(620,780),w:24,h:58,life:4,explode:rand(.8,1.5)});warn('🚀 ROCKET LAUNCH',.8)}
 function spawnBirds(){let l=Math.random()<.5;hazards.push({type:'birds',x:l?-115:W+115,y:cameraY+rand(110,PLAY_H*.55),vx:l?rand(210,285):-rand(210,285),w:104,h:40,life:5,steals:Math.random()<.38});warn('BIRD FLOCK',.55)}
 function spawnMeteors(){
-  for(let i=0;i<6+Math.floor(Math.random()*4);i++){
-    const mode=Math.random(),delay=rand(.28,.62)+i*.035;
-    if(mode<.34)hazards.push({type:'mw',dir:'down',x:rand(18,W-18),y:cameraY-80,delay,vx:rand(-180,180),vy:rand(900,1180),r:rand(9,16),life:4,near:false});
-    else if(mode<.68){let l=Math.random()<.5;hazards.push({type:'mw',dir:l?'right':'left',x:l?-80:W+80,y:cameraY+rand(80,PLAY_H*.72),delay,vx:l?rand(760,980):-rand(760,980),vy:rand(-100,130),r:rand(9,16),life:4,near:false})}
-    else{let l=Math.random()<.5;hazards.push({type:'mw',dir:l?'diagR':'diagL',x:l?-70:W+70,y:cameraY-20,delay,vx:l?rand(560,760):-rand(560,760),vy:rand(720,940),r:rand(10,17),life:4,near:false})}
-  }warn('☄ METEOR STORM',.75)
+  meteorDestroyed=0;
+  const safeX=rand(W*.22,W*.78);
+  const safeHalf=72;
+  const count=5+Math.floor(Math.random()*3);
+  for(let i=0;i<count;i++){
+    const mode=Math.random(),delay=rand(.30,.64)+i*.05;
+    let destroyer=Math.random()<.22;
+    let x=rand(18,W-18);
+
+    // Keep one readable safe corridor through the shower.
+    if(Math.abs(x-safeX)<safeHalf){
+      x = x<safeX ? Math.max(18,safeX-safeHalf-rand(18,70)) : Math.min(W-18,safeX+safeHalf+rand(18,70));
+    }
+
+    if(mode<.38){
+      hazards.push({type:'mw',dir:'down',x,y:cameraY-80,delay,vx:rand(-150,150),vy:rand(820,1030),r:rand(9,15),life:4,near:false,destroyer});
+    }else if(mode<.70){
+      let l=Math.random()<.5;
+      hazards.push({type:'mw',dir:l?'right':'left',x:l?-80:W+80,y:cameraY+rand(90,PLAY_H*.70),delay,vx:l?rand(700,900):-rand(700,900),vy:rand(-80,110),r:rand(9,15),life:4,near:false,destroyer});
+    }else{
+      let l=Math.random()<.5;
+      hazards.push({type:'mw',dir:l?'diagR':'diagL',x:l?-70:W+70,y:cameraY-20,delay,vx:l?rand(520,700):-rand(520,700),vy:rand(650,860),r:rand(10,16),life:4,near:false,destroyer});
+    }
+  }
+  warn('☄ METEOR STORM — SAFE LANE',.85)
 }
 function spawnUFO(){hazards.push({type:'ufo',x:-125,y:cameraY+rand(90,PLAY_H*.48),vx:185,w:110,h:46,life:7,beam:true});warn('🛸 UFO INVASION',.8)}
 function spawnBlackHole(){hazards.push({type:'blackhole',x:rand(70,W-70),y:cameraY+rand(110,PLAY_H*.55),r:32,life:5.5});warn('GRAVITY ANOMALY',.75)}
@@ -172,9 +191,18 @@ function pickupSpawn(){
   pickups.push({type:t,x:host.x+host.w/2,y:host.y-30,r:13,life:14,host})
 }
 function emergencyPlatform(){if(emergencyCooldown>0)return;platforms.push({x:clamp(doge.x-42,16,W-132),y:doge.y+105,w:132,h:18,type:'emergency',baseX:doge.x-42,t:0,dead:false,angle:0,angVel:0,hits:0,rotation:0});emergencyCooldown=30;warn('EMERGENCY RECOVERY',.55)}
+function meteorRecoveryPlatforms(){
+  const y1=doge.y-120,y2=doge.y-255;
+  const x1=clamp(doge.x-30,18,W-148);
+  const x2=clamp((W-136)-x1,18,W-136);
+  platforms.push({x:x1,y:y1,w:146,h:18,type:'emergency',baseX:x1,t:0,dead:false,angle:0,angVel:0,hits:0,rotation:0});
+  platforms.push({x:x2,y:y2,w:136,h:18,type:'emergency',baseX:x2,t:0,dead:false,angle:0,angVel:0,hits:0,rotation:0});
+  meteorRecoveryTimer=4.2;
+  warn('RECOVERY WINDOW',.8)
+}
 
 function director(dt){
-  directorClock-=dt;eventCooldown-=dt;if(directorClock>0)return;
+  directorClock-=dt;eventCooldown-=dt;if(meteorRecoveryTimer>0){meteorRecoveryTimer-=dt;return}if(directorClock>0)return;
   let z=zone(highest),skill=clamp((combo+dangerStreak*.65)/8,0,1);
   let base=runTime<18?3.5:z==='GROUND'?3.1:z==='CLOUDS'?2.75:z==='ATMOSPHERE'?2.4:z==='INTERSTELLAR'?1.7:2.0;
   directorClock=rand(base,base+1.45)-skill*.55;
@@ -192,7 +220,7 @@ function director(dt){
   };
   event();
   if(chaos){setTimeout(()=>{if(state==='playing'){let q=Math.random();if(q<.38)spawnMeteors();else if(q<.60)windEvent();else if(q<.78)spawnPlane();else spawnBlackHole()}},220);warn('⚠ CHAOS WINDOW',.7)}
-  if(eventCooldown<=0){eventCooldown=rand(32,46);let q=Math.random();if(q<.28){spawnMeteors();setTimeout(()=>spawnMeteors(),650)}else if(q<.52){spawnRocket();setTimeout(()=>spawnRocket(),480)}else if(q<.76){spawnUFO();setTimeout(()=>spawnUFO(),500)}else{windEvent();setTimeout(()=>spawnMeteors(),350)}warn('⚠ MAJOR EVENT',1.0)}
+  if(eventCooldown<=0){eventCooldown=rand(34,50);let q=Math.random();if(q<.28){spawnMeteors();setTimeout(()=>{if(state==='playing'&&meteorRecoveryTimer<=0)spawnMeteors()},1100)}else if(q<.52){spawnRocket();setTimeout(()=>spawnRocket(),480)}else if(q<.76){spawnUFO();setTimeout(()=>spawnUFO(),500)}else{windEvent();setTimeout(()=>spawnMeteors(),350)}warn('⚠ MAJOR EVENT',1.0)}
 }
 
 function updateHazards(dt){
@@ -222,7 +250,18 @@ function updateHazards(dt){
       h.x+=h.vx*dt;h.y+=h.vy*dt;let dx=doge.x+27-h.x,dy=doge.y+26-h.y,d=Math.hypot(dx,dy);
       if(d<h.r+22)hit((dx>0?1:-1)*220,155,1.18);
       else if(!h.near&&d<h.r+50){h.near=true;nearMisses++;dangerStreak=Math.min(9,dangerStreak+1);combo=Math.min(8,combo+1);doge.faceTimer=.45;warn(`DANGER x${dangerStreak}`,.4)}
-      for(const p of platforms){if(p.dead||p.type==='ground')continue;if(h.x+h.r>p.x&&h.x-h.r<p.x+p.w&&h.y+h.r>p.y-8&&h.y-h.r<p.y+26){p.dead=true;h.life=0;puff(h.x,h.y,18,'hit');warn('PLATFORM DESTROYED',.32);break}}
+      for(const p of platforms){
+        if(p.dead||p.type==='ground'||p.type==='emergency')continue;
+        if(h.x+h.r>p.x&&h.x-h.r<p.x+p.w&&h.y+h.r>p.y-8&&h.y-h.r<p.y+26){
+          if(h.destroyer && meteorDestroyed<meteorEventCap){
+            p.dead=true;meteorDestroyed++;h.life=0;puff(h.x,h.y,18,'hit');warn('PLATFORM DESTROYED',.32);
+            if(meteorDestroyed>=meteorEventCap){meteorRecoveryPlatforms()}
+          }else{
+            h.life=0;puff(h.x,h.y,10,'soft');
+          }
+          break
+        }
+      }
     }else if(h.type==='blackhole'){
       let dx=h.x-(doge.x+27),dy=h.y-(doge.y+26),d=Math.max(45,Math.hypot(dx,dy)),pull=95000/(d*d);
       doge.vx+=dx/d*pull*dt*240;doge.vy+=dy/d*pull*dt*240;
