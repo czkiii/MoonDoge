@@ -155,10 +155,9 @@ function spawnPlane(){let l=Math.random()<.5;hazards.push({type:'plane',x:l?-150
 function spawnRocket(){let l=Math.random()<.5;hazards.push({type:'rocket',x:l?rand(30,W*.4):rand(W*.6,W-30),y:cameraY+PLAY_H+70,vx:rand(-80,80),vy:-rand(620,780),w:24,h:58,life:4,explode:rand(.8,1.5)});warn('🚀 ROCKET LAUNCH',.8)}
 function spawnBirds(){let l=Math.random()<.5;hazards.push({type:'birds',x:l?-115:W+115,y:cameraY+rand(110,PLAY_H*.55),vx:l?rand(210,285):-rand(210,285),w:104,h:40,life:5,steals:Math.random()<.38});warn('BIRD FLOCK',.55)}
 function spawnMeteors(){
-  meteorDestroyed=0;
   const safeX=rand(W*.22,W*.78);
   const safeHalf=72;
-  const count=5+Math.floor(Math.random()*3);
+  const count=4+Math.floor(Math.random()*3);
   for(let i=0;i<count;i++){
     const mode=Math.random(),delay=rand(.30,.64)+i*.05;
     let destroyer=Math.random()<.22;
@@ -170,13 +169,13 @@ function spawnMeteors(){
     }
 
     if(mode<.38){
-      hazards.push({type:'mw',dir:'down',x,y:cameraY-80,delay,vx:rand(-150,150),vy:rand(820,1030),r:rand(9,15),life:4,near:false,destroyer});
+      hazards.push({type:'mw',dir:'down',x,y:cameraY-80,delay,vx:rand(-150,150),vy:rand(760,960),r:rand(9,15),life:4,near:false,destroyer});
     }else if(mode<.70){
       let l=Math.random()<.5;
-      hazards.push({type:'mw',dir:l?'right':'left',x:l?-80:W+80,y:cameraY+rand(90,PLAY_H*.70),delay,vx:l?rand(700,900):-rand(700,900),vy:rand(-80,110),r:rand(9,15),life:4,near:false,destroyer});
+      hazards.push({type:'mw',dir:l?'right':'left',x:l?-80:W+80,y:cameraY+rand(90,PLAY_H*.70),delay,vx:l?rand(650,830):-rand(650,830),vy:rand(-80,110),r:rand(9,15),life:4,near:false,destroyer});
     }else{
       let l=Math.random()<.5;
-      hazards.push({type:'mw',dir:l?'diagR':'diagL',x:l?-70:W+70,y:cameraY-20,delay,vx:l?rand(520,700):-rand(520,700),vy:rand(650,860),r:rand(10,16),life:4,near:false,destroyer});
+      hazards.push({type:'mw',dir:l?'diagR':'diagL',x:l?-70:W+70,y:cameraY-20,delay,vx:l?rand(480,650):-rand(480,650),vy:rand(600,790),r:rand(10,16),life:4,near:false,destroyer});
     }
   }
   warn('☄ METEOR STORM — SAFE LANE',.85)
@@ -202,7 +201,7 @@ function meteorRecoveryPlatforms(){
 }
 
 function director(dt){
-  directorClock-=dt;eventCooldown-=dt;if(meteorRecoveryTimer>0){meteorRecoveryTimer-=dt;return}if(directorClock>0)return;
+  directorClock-=dt;eventCooldown-=dt;if(directorClock>0)return;
   let z=zone(highest),skill=clamp((combo+dangerStreak*.65)/8,0,1);
   let base=runTime<18?3.5:z==='GROUND'?3.1:z==='CLOUDS'?2.75:z==='ATMOSPHERE'?2.4:z==='INTERSTELLAR'?1.7:2.0;
   directorClock=rand(base,base+1.45)-skill*.55;
@@ -220,7 +219,7 @@ function director(dt){
   };
   event();
   if(chaos){setTimeout(()=>{if(state==='playing'){let q=Math.random();if(q<.38)spawnMeteors();else if(q<.60)windEvent();else if(q<.78)spawnPlane();else spawnBlackHole()}},220);warn('⚠ CHAOS WINDOW',.7)}
-  if(eventCooldown<=0){eventCooldown=rand(34,50);let q=Math.random();if(q<.28){spawnMeteors();setTimeout(()=>{if(state==='playing'&&meteorRecoveryTimer<=0)spawnMeteors()},1100)}else if(q<.52){spawnRocket();setTimeout(()=>spawnRocket(),480)}else if(q<.76){spawnUFO();setTimeout(()=>spawnUFO(),500)}else{windEvent();setTimeout(()=>spawnMeteors(),350)}warn('⚠ MAJOR EVENT',1.0)}
+  if(eventCooldown<=0){eventCooldown=rand(34,50);let q=Math.random();if(q<.28){spawnMeteors();setTimeout(()=>{if(state==='playing')spawnMeteors()},1100)}else if(q<.52){spawnRocket();setTimeout(()=>spawnRocket(),480)}else if(q<.76){spawnUFO();setTimeout(()=>spawnUFO(),500)}else{windEvent();setTimeout(()=>spawnMeteors(),350)}warn('⚠ MAJOR EVENT',1.0)}
 }
 
 function updateHazards(dt){
@@ -254,8 +253,8 @@ function updateHazards(dt){
         if(p.dead||p.type==='ground'||p.type==='emergency')continue;
         if(h.x+h.r>p.x&&h.x-h.r<p.x+p.w&&h.y+h.r>p.y-8&&h.y-h.r<p.y+26){
           if(h.destroyer && meteorDestroyed<meteorEventCap){
-            p.dead=true;meteorDestroyed++;h.life=0;puff(h.x,h.y,18,'hit');warn('PLATFORM DESTROYED',.32);
-            if(meteorDestroyed>=meteorEventCap){meteorRecoveryPlatforms()}
+            h.life=0;puff(h.x,h.y,10,'soft');
+            
           }else{
             h.life=0;puff(h.x,h.y,10,'soft');
           }
@@ -263,9 +262,19 @@ function updateHazards(dt){
         }
       }
     }else if(h.type==='blackhole'){
-      let dx=h.x-(doge.x+27),dy=h.y-(doge.y+26),d=Math.max(45,Math.hypot(dx,dy)),pull=95000/(d*d);
-      doge.vx+=dx/d*pull*dt*240;doge.vy+=dy/d*pull*dt*240;
-      if(d<46){doge.spin+=5*dt;doge.faceTimer=.5}
+      let dx=h.x-(doge.x+27),dy=h.y-(doge.y+26),rawD=Math.hypot(dx,dy),d=Math.max(58,rawD),pull=76000/(d*d);
+      doge.vx+=dx/d*pull*dt*210;
+      // Never use the black hole as a direct downward kill source.
+      let verticalForce=dy/d*pull*dt*160;
+      if(verticalForce>0)verticalForce*=.28;
+      doge.vy+=verticalForce;
+      if(rawD<58){
+        doge.faceTimer=.7;
+        doge.spin+=Math.sign(dx||1)*7*dt;
+        // Safe slingshot instead of swallowing/killing the player.
+        doge.vx-=dx/d*190*dt;
+        doge.vy-=150*dt;
+      }
     }
   }
   hazards=hazards.filter(h=>h.life>0&&sy(h.y)<PLAY_H+240&&h.x>-250&&h.x<W+250)

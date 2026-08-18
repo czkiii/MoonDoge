@@ -1,13 +1,11 @@
-MOON DOGE — METEOR BALANCE FIX
+MOON DOGE — METEOR / BLACK HOLE FIX
 
-Javítva:
-- meteor shower marad brutális, de már nem tudja letörölni a pályát
-- egy showerben maximum 2 platform rombolódhat
-- csak kb. 22% meteor rombol platformot
-- safe lane marad a hullámban
-- emergency platformot meteor nem tud rombolni
-- nagyobb pusztítás után automatikus recovery platformpár jelenik meg
-- recovery window alatt a director röviden visszavesz
-- chained meteor major event lassabban követi egymást
+Változások:
+- a meteorok többé SOHA nem pusztítanak platformot
+- a meteorok továbbra is veszélyesek a Shibára
+- safe lane megmaradt
+- meteor shower kicsit kevésbé tömény
+- fekete lyuk többé nem közvetlen halálforrás
+- fekete lyuk erősen eltérít és megpörget, de középen slingshot-szerűen kilök
 
 Az alap fájlnevek változatlanok.
