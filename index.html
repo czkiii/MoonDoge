@@ -547,7 +547,7 @@ function gameOver(){
   Bad decisions: ${badDecisions} · Score: ${Math.floor(score)}</p>
   <button id="retry">RETRY</button></div>`;
   overlay.style.display='grid';$('retry').onclick=()=>{overlay.style.display='none';state='playing';paused=false;pausePanel.style.display='none';reset();setTimeout(()=>autoBounce(1),150)}
-}}
+}
 
 function update(dt0){
   if(state!=='playing'||paused)return;
