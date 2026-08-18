@@ -1,19 +1,13 @@
 MOON DOGE
 
-Cseréld le a GitHub repóban az azonos nevű fájlokat:
-index.html
-manifest.webmanifest
-sw.js
-icon-192.png
-icon-512.png
+Cseréld le a GitHub repóban az azonos nevű fájlokat.
 
-Új:
-- hosszabb run
-- Moon checkpoint, utána Mars
-- billenő platform
-- villámfelhő
-- meteor shower warninggal
-- repülő hazard
-- madárraj
-- széllökés
-- difficulty director
+Fő irány:
+- végtelen run
+- Moon/Mars/Jupiter/Saturn/Voyager milestone
+- Voyager után procedurális interstellar chaos
+- gyro + auto-jump + boost
+- director-based hazards
+- shield / slow-mo / boost refill pickup
+- knockback, nincs HP
+- absurd interstellar platformok
