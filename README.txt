@@ -1,14 +1,22 @@
 MOON DOGE
 
-Cseréld le a GitHub repóban az azonos nevű fájlokat ezekre:
+Cseréld le a GitHub repóban az azonos nevű fájlokat:
 - index.html
 - manifest.webmanifest
 - sw.js
 - icon-192.png
 - icon-512.png
 
-GitHub Pages maradhat: main / (root)
+Új irányítás:
+- A Shiba automatikusan ugrik minden landolás után.
+- Telefon döntése balra / jobbra = irányítás.
+- BOOST levegőben tölthető; elengedésre extra lökést ad.
+- iPhone Safari az első PLAY-nél kérhet motion/orientation engedélyt.
 
-Ha iPhone-on a régi változat marad cache-ben:
-Safari-ban frissíts rá, vagy zárd be és nyisd újra.
-A service worker most network-first módon frissül.
+GitHub Pages: main / (root)
+
+Ha a főképernyős PWA régi marad:
+1. nyisd meg Safari-ban az oldalt,
+2. frissíts rá,
+3. zárd be a főképernyős appot teljesen,
+4. nyisd meg újra.

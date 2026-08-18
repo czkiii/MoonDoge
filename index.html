@@ -12,9 +12,9 @@
 <title>Moon Doge</title>
 <style>
 :root{
-  --safe-b:max(16px,env(safe-area-inset-bottom));
+  --safe-b:max(18px,env(safe-area-inset-bottom));
   --safe-t:max(14px,env(safe-area-inset-top));
-  --control-h:30vh;
+  --control-h:24vh;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{
@@ -35,69 +35,65 @@ canvas{display:block;width:100%;height:100%}
   position:absolute;top:56px;left:50%;transform:translateX(-50%);
   font-size:18px;opacity:0;transition:opacity .18s ease
 }
+#tiltHint{
+  position:absolute;top:92px;left:50%;transform:translateX(-50%);
+  font-size:12px;opacity:.65;white-space:nowrap
+}
 
 #controlZone{
   position:fixed;left:0;right:0;bottom:0;height:var(--control-h);
   z-index:3;pointer-events:auto;
-  background:linear-gradient(to bottom,rgba(7,13,28,.08),rgba(7,13,28,.52) 28%,rgba(7,13,28,.72));
+  background:linear-gradient(to bottom,rgba(7,13,28,.05),rgba(7,13,28,.58) 40%,rgba(7,13,28,.82));
   border-top:1px solid rgba(255,255,255,.08);
   backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
 }
 
-#chargeWrap{
-  position:absolute;left:22px;bottom:var(--safe-b);width:138px;height:138px;
+#boostWrap{
+  position:absolute;left:26px;bottom:var(--safe-b);width:152px;height:152px;
   display:grid;place-items:center;pointer-events:auto;
 }
-#charge{
+#boost{
   position:absolute;inset:8px;border-radius:50%;
   background:rgba(255,255,255,.10);
-  border:2px solid rgba(255,255,255,.42);
+  border:2px solid rgba(255,255,255,.44);
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.08),0 8px 28px rgba(0,0,0,.18);
   display:grid;place-items:center;
   transform:scale(1);
   transition:transform .06s linear, background .06s linear;
   user-select:none;-webkit-user-select:none;
 }
-#chargeCore{
-  width:88px;height:88px;border-radius:50%;
+#boostCore{
+  width:96px;height:96px;border-radius:50%;
   display:grid;place-items:center;
   background:rgba(255,255,255,.10);
-  color:#fff;font-weight:900;font-size:14px;letter-spacing:.45px;
+  color:#fff;font-weight:900;font-size:15px;letter-spacing:.55px;
+  text-align:center;
 }
-#chargeMeter{
-  position:absolute;inset:0;width:138px;height:138px;transform:rotate(-90deg);pointer-events:none
+#boostMeter{
+  position:absolute;inset:0;width:152px;height:152px;transform:rotate(-90deg);pointer-events:none
 }
-#chargeTrack,#chargeProgress{
-  fill:none;stroke-width:8;
-}
-#chargeTrack{stroke:rgba(255,255,255,.12)}
-#chargeProgress{
+#boostTrack,#boostProgress{fill:none;stroke-width:8}
+#boostTrack{stroke:rgba(255,255,255,.12)}
+#boostProgress{
   stroke:#fff;stroke-linecap:round;
-  stroke-dasharray:364;stroke-dashoffset:364;
-  filter:drop-shadow(0 0 6px rgba(255,255,255,.55));
+  stroke-dasharray:402;stroke-dashoffset:402;
+  filter:drop-shadow(0 0 6px rgba(255,255,255,.55))
 }
+#boostWrap.disabled{opacity:.38}
 
-#joyTouchArea{
-  position:absolute;right:0;top:0;bottom:0;width:54%;
-  pointer-events:auto;
+#tiltVisual{
+  position:absolute;right:28px;bottom:calc(var(--safe-b) + 24px);
+  width:160px;height:94px;pointer-events:none;opacity:.8
 }
-#joybase{
-  position:absolute;width:164px;height:164px;border-radius:50%;
-  border:2px solid rgba(255,255,255,.38);
-  background:rgba(255,255,255,.08);
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.05),0 10px 34px rgba(0,0,0,.18);
-  display:none;pointer-events:none;
+#phoneIcon{
+  position:absolute;left:50%;top:50%;
+  width:56px;height:88px;border:3px solid rgba(255,255,255,.75);
+  border-radius:13px;transform:translate(-50%,-50%) rotate(0deg);
+  transform-origin:center;transition:transform .06s linear
 }
-#joybase.active{display:block}
-#joyInner{
-  position:absolute;left:50%;top:50%;width:94px;height:94px;border-radius:50%;
-  border:1px solid rgba(255,255,255,.12);transform:translate(-50%,-50%);
-}
-#knob{
-  position:absolute;left:50%;top:50%;width:66px;height:66px;border-radius:50%;
-  background:rgba(255,255,255,.88);
-  box-shadow:0 6px 18px rgba(0,0,0,.22);
-  transform:translate(-50%,-50%);
+#tiltLabel{
+  position:absolute;bottom:-3px;left:0;right:0;text-align:center;
+  color:#fff;font-size:11px;font-weight:800;letter-spacing:.6px
 }
 
 #overlay{
@@ -107,13 +103,16 @@ canvas{display:block;width:100%;height:100%}
 .card{
   padding:30px;border-radius:28px;background:#0b1630eb;
   backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
-  max-width:350px;width:100%;box-shadow:0 20px 70px #0006
+  max-width:355px;width:100%;box-shadow:0 20px 70px #0006
 }
 h1{margin:0 0 8px;font-size:41px;letter-spacing:-1.4px}
 p{opacity:.9;line-height:1.45}
 button{
   font:inherit;font-weight:900;border:0;border-radius:999px;padding:15px 31px;
-  background:#fff;color:#12213d;min-width:150px
+  background:#fff;color:#12213d;min-width:160px;margin-top:6px
+}
+button.secondary{
+  background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25)
 }
 .small{font-size:12px;opacity:.72}
 </style>
@@ -125,30 +124,29 @@ button{
   <div id="alt">0 m</div>
   <div id="target">TARGET<br>SPACE 0%</div>
   <div id="combo"></div>
+  <div id="tiltHint">TILT TO STEER</div>
 </div>
 
 <div id="controlZone">
-  <div id="chargeWrap">
-    <svg id="chargeMeter" viewBox="0 0 138 138">
-      <circle id="chargeTrack" cx="69" cy="69" r="58"></circle>
-      <circle id="chargeProgress" cx="69" cy="69" r="58"></circle>
+  <div id="boostWrap" class="disabled">
+    <svg id="boostMeter" viewBox="0 0 152 152">
+      <circle id="boostTrack" cx="76" cy="76" r="64"></circle>
+      <circle id="boostProgress" cx="76" cy="76" r="64"></circle>
     </svg>
-    <div id="charge"><div id="chargeCore">CHARGE</div></div>
+    <div id="boost"><div id="boostCore">BOOST</div></div>
   </div>
 
-  <div id="joyTouchArea">
-    <div id="joybase">
-      <div id="joyInner"></div>
-      <div id="knob"></div>
-    </div>
+  <div id="tiltVisual">
+    <div id="phoneIcon"></div>
+    <div id="tiltLabel">TILT LEFT / RIGHT</div>
   </div>
 </div>
 
 <div id="overlay">
   <div class="card">
     <h1>MOON DOGE</h1>
-    <p>Charge. Jump. Keep going.</p>
-    <p class="small">Bal: CHARGE · Jobb: érintsd meg bárhol és húzd oldalra</p>
+    <p>A Shiba automatically bounces upward.</p>
+    <p class="small">Döntsd a telefont balra-jobbra az irányításhoz. Levegőben tartsd nyomva a BOOST-ot, majd engedd el.</p>
     <button id="play">PLAY</button>
   </div>
 </div>
@@ -159,18 +157,17 @@ button{
 
 const $=id=>document.getElementById(id);
 const canvas=$('game'),ctx=canvas.getContext('2d');
-const altEl=$('alt'),targetEl=$('target'),comboEl=$('combo');
+const altEl=$('alt'),targetEl=$('target'),comboEl=$('combo'),tiltHint=$('tiltHint');
 const overlay=$('overlay'),playBtn=$('play');
-const controlZone=$('controlZone'),chargeWrap=$('chargeWrap'),chargeBtn=$('charge');
-const chargeCore=$('chargeCore'),chargeProgress=$('chargeProgress');
-const joyTouchArea=$('joyTouchArea'),joybase=$('joybase'),knob=$('knob');
+const boostWrap=$('boostWrap'),boostBtn=$('boost'),boostCore=$('boostCore'),boostProgress=$('boostProgress');
+const phoneIcon=$('phoneIcon');
 
 let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2);
-let CONTROL_H=Math.max(220,H*.30),PLAY_H=H-CONTROL_H;
+let CONTROL_H=Math.max(210,H*.24),PLAY_H=H-CONTROL_H;
 
 function resize(){
   W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);
-  CONTROL_H=Math.max(220,H*.30);PLAY_H=H-CONTROL_H;
+  CONTROL_H=Math.max(210,H*.24);PLAY_H=H-CONTROL_H;
   document.documentElement.style.setProperty('--control-h',CONTROL_H+'px');
   canvas.width=Math.floor(W*DPR);canvas.height=Math.floor(H*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -181,30 +178,33 @@ resize();
 
 const CFG={
   gravity:1500,
-  airAccel:1000,
-  maxX:340,
-  damping:.90,
-  minJump:610,
-  maxJump:1050,
-  chargeTime:.9,
-  doubleMult:.73,
+  autoJump:790,
+  airAccel:1120,
+  maxX:355,
+  damping:.91,
+  boostMin:350,
+  boostMax:690,
+  boostTime:.78,
   platformH:18,
-  deathPad:90,
+  deathPad:95,
   camSmooth:.105,
-  worldTopPadding:120
+  tiltDeadzone:3.5,
+  tiltMax:22,
+  keyboardTilt:0
 };
 
 let state='menu',last=performance.now();
-let platforms=[],particles=[],stars=[],decor=[];
+let platforms=[],particles=[],stars=[];
 let cameraY=0,combo=0,highest=0,nextSpawnY=0;
-let joyX=0,charging=false,charge=0,activeChargeId=null,activeJoyId=null;
-let joyOriginX=0,joyOriginY=0;
+let steer=0,keyboardSteer=0;
+let charging=false,boostCharge=0,activeBoostId=null,boostReady=true;
+let motionEnabled=false,lastTiltDeg=0;
 
 function safeLoadBest(){try{return +(localStorage.getItem('moonDogeBest')||0)}catch(e){return 0}}
 function safeSaveBest(v){try{localStorage.setItem('moonDogeBest',String(v))}catch(e){}}
 let best=safeLoadBest();
 
-const doge={x:W/2,y:PLAY_H-145,w:52,h:50,vx:0,vy:0,onGround:false,doubleReady:true};
+const doge={x:W/2-26,y:PLAY_H-150,w:52,h:50,vx:0,vy:0,onGround:false};
 
 const rand=(a,b)=>a+Math.random()*(b-a);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -240,29 +240,34 @@ function rr(x,y,w,h,r,fill=true,stroke=false){
 }
 
 function reset(){
-  platforms=[];particles=[];stars=[];decor=[];
-  combo=0;highest=0;cameraY=0;charging=false;charge=0;joyX=0;
-  doge.x=W/2-26;doge.y=PLAY_H-150;doge.vx=0;doge.vy=0;doge.onGround=false;doge.doubleReady=true;
+  platforms=[];particles=[];stars=[];
+  combo=0;highest=0;cameraY=0;steer=0;keyboardSteer=0;
+  charging=false;boostCharge=0;boostReady=true;
+  doge.x=W/2-26;doge.y=PLAY_H-150;doge.vx=0;doge.vy=0;doge.onGround=false;
+
   platforms.push({
     x:W/2-100,y:PLAY_H-72,w:200,h:CFG.platformH,
-    type:'normal',baseX:W/2-100,t:0,dead:false,crumble:0
+    type:'normal',baseX:W/2-100,t:0,dead:false,crumble:0,zone:'GROUND'
   });
+
   nextSpawnY=PLAY_H-150;
   for(let i=0;i<42;i++)spawnPlatform();
-  for(let i=0;i<100;i++)stars.push({x:Math.random()*W,y:Math.random()*PLAY_H,r:Math.random()*1.6+.25});
+  for(let i=0;i<110;i++)stars.push({x:Math.random()*W,y:Math.random()*PLAY_H,r:Math.random()*1.7+.2});
+
+  updateBoostUI();
 }
 
 function spawnPlatform(){
   const a=Math.max(0,(PLAY_H-nextSpawnY)*18),z=zone(a);
-  let gap=z==='GROUND'?rand(70,105):z==='CLOUDS'?rand(80,120):rand(88,136);
+  let gap=z==='GROUND'?rand(72,104):z==='CLOUDS'?rand(82,118):rand(90,132);
   nextSpawnY-=gap;
 
-  let w=z==='GROUND'?rand(112,168):z==='CLOUDS'?rand(100,160):rand(88,146);
+  let w=z==='GROUND'?rand(118,170):z==='CLOUDS'?rand(104,160):rand(92,148);
   let x=rand(16,Math.max(17,W-w-16)),r=Math.random(),type='normal';
 
-  if(z!=='GROUND'&&r<.17)type='moving';
-  if((z==='ATMOSPHERE'||z==='SPACE'||z==='MOON')&&r>.82)type='crumble';
-  if((z==='SPACE'||z==='MOON')&&r>.92)type='bounce';
+  if(z!=='GROUND'&&r<.16)type='moving';
+  if((z==='ATMOSPHERE'||z==='SPACE'||z==='MOON')&&r>.84)type='crumble';
+  if((z==='SPACE'||z==='MOON')&&r>.93)type='bounce';
 
   platforms.push({x,y:nextSpawnY,w,h:CFG.platformH,type,baseX:x,t:rand(0,10),dead:false,crumble:0,zone:z});
 }
@@ -270,143 +275,150 @@ function spawnPlatform(){
 function puff(x,y,n=8,kind='soft'){
   for(let i=0;i<n;i++){
     particles.push({
-      x,y,vx:rand(-95,95),vy:rand(-145,-20),
+      x,y,vx:rand(-95,95),vy:rand(-150,-20),
       life:rand(.28,.58),r:rand(2,5.5),kind
     });
   }
 }
 
-function jump(power,isDouble){
-  const gm=grav(highest);
-  doge.vy=-(CFG.minJump+(CFG.maxJump-CFG.minJump)*power)*(isDouble?CFG.doubleMult:1)*Math.sqrt(gm);
+function autoBounce(mult=1){
+  doge.vy=-CFG.autoJump*mult*Math.sqrt(grav(highest));
   doge.onGround=false;
-  if(isDouble)doge.doubleReady=false;
-  puff(doge.x+doge.w/2,doge.y+doge.h,isDouble?15:8,isDouble?'burst':'soft');
-  if(navigator.vibrate && power>.92) navigator.vibrate(isDouble?10:14);
+  boostReady=true;
+  puff(doge.x+doge.w/2,doge.y+doge.h,9,'soft');
 }
 
-function updateChargeUI(){
-  const circumference=364;
-  chargeProgress.style.strokeDashoffset=String(circumference*(1-charge));
-  chargeBtn.style.transform=`scale(${1-charge*.07})`;
-  chargeBtn.style.background=`rgba(255,255,255,${.10+charge*.18})`;
-  chargeCore.textContent=charging ? `${Math.round(charge*100)}%` : 'CHARGE';
-  if(charge>=.995){
-    chargeProgress.style.filter='drop-shadow(0 0 10px rgba(255,255,255,.95))';
-  }else{
-    chargeProgress.style.filter='drop-shadow(0 0 6px rgba(255,255,255,.55))';
-  }
+function doBoost(power){
+  if(!boostReady)return;
+  const force=CFG.boostMin+(CFG.boostMax-CFG.boostMin)*power;
+  doge.vy-=force*Math.sqrt(grav(highest));
+  doge.vy=Math.max(doge.vy,-1100);
+  boostReady=false;
+  puff(doge.x+doge.w/2,doge.y+doge.h,15,'burst');
+  if(navigator.vibrate)navigator.vibrate(power>.8?13:7);
 }
 
-function startCharge(id){
-  if(state!=='playing'||activeChargeId!==null)return;
-  activeChargeId=id;charging=true;charge=0;updateChargeUI();
-}
-function endCharge(id){
-  if(id!==activeChargeId)return;
-  if(charging){
-    if(doge.onGround)jump(charge,false);
-    else if(doge.doubleReady)jump(charge,true);
-  }
-  charging=false;charge=0;activeChargeId=null;updateChargeUI();
+function updateBoostUI(){
+  const circumference=402;
+  boostProgress.style.strokeDashoffset=String(circumference*(1-boostCharge));
+  boostBtn.style.transform=`scale(${1-boostCharge*.075})`;
+  boostBtn.style.background=`rgba(255,255,255,${.10+boostCharge*.20})`;
+  boostCore.textContent=charging?`${Math.round(boostCharge*100)}%`:(boostReady?'BOOST':'USED');
+  boostWrap.classList.toggle('disabled',!boostReady && !charging);
 }
 
-function placeJoystick(clientX,clientY){
-  const area=joyTouchArea.getBoundingClientRect();
-  const size=164;
-  const localX=clamp(clientX-area.left,size/2+8,area.width-size/2-8);
-  const localY=clamp(clientY-area.top,size/2+8,area.height-size/2-8);
-  joyOriginX=area.left+localX;
-  joyOriginY=area.top+localY;
-  joybase.style.left=(localX-size/2)+'px';
-  joybase.style.top=(localY-size/2)+'px';
-  joybase.classList.add('active');
-  knob.style.transform='translate(-50%,-50%)';
+function startBoost(id){
+  if(state!=='playing'||activeBoostId!==null||!boostReady)return;
+  activeBoostId=id;charging=true;boostCharge=0;updateBoostUI();
 }
-
-function joyMove(clientX,clientY){
-  const max=54;
-  let dx=clientX-joyOriginX,dy=clientY-joyOriginY;
-  const d=Math.hypot(dx,dy)||1;
-  if(d>max){dx*=max/d;dy*=max/d}
-  joyX=clamp(dx/max,-1,1);
-  knob.style.transform=`translate(calc(-50% + ${dx}px),calc(-50% + ${dy*.18}px))`;
-}
-function joyEnd(id){
-  if(id!==activeJoyId)return;
-  activeJoyId=null;joyX=0;joybase.classList.remove('active');
-  knob.style.transform='translate(-50%,-50%)';
+function endBoost(id){
+  if(id!==activeBoostId)return;
+  if(charging&&boostReady)doBoost(boostCharge);
+  charging=false;boostCharge=0;activeBoostId=null;updateBoostUI();
 }
 
 if('PointerEvent' in window){
-  chargeWrap.addEventListener('pointerdown',e=>{
-    e.preventDefault();chargeWrap.setPointerCapture?.(e.pointerId);startCharge(e.pointerId)
+  boostWrap.addEventListener('pointerdown',e=>{
+    e.preventDefault();boostWrap.setPointerCapture?.(e.pointerId);startBoost(e.pointerId)
   });
-  chargeWrap.addEventListener('pointerup',e=>{e.preventDefault();endCharge(e.pointerId)});
-  chargeWrap.addEventListener('pointercancel',e=>endCharge(e.pointerId));
-
-  joyTouchArea.addEventListener('pointerdown',e=>{
-    e.preventDefault();
-    if(activeJoyId!==null)return;
-    activeJoyId=e.pointerId;
-    joyTouchArea.setPointerCapture?.(e.pointerId);
-    placeJoystick(e.clientX,e.clientY);
-    joyMove(e.clientX,e.clientY);
-  });
-  joyTouchArea.addEventListener('pointermove',e=>{
-    if(e.pointerId===activeJoyId)joyMove(e.clientX,e.clientY)
-  });
-  joyTouchArea.addEventListener('pointerup',e=>joyEnd(e.pointerId));
-  joyTouchArea.addEventListener('pointercancel',e=>joyEnd(e.pointerId));
+  boostWrap.addEventListener('pointerup',e=>{e.preventDefault();endBoost(e.pointerId)});
+  boostWrap.addEventListener('pointercancel',e=>endBoost(e.pointerId));
 }else{
-  chargeWrap.addEventListener('touchstart',e=>{e.preventDefault();startCharge('touch')},{passive:false});
-  chargeWrap.addEventListener('touchend',e=>{e.preventDefault();endCharge('touch')},{passive:false});
-  joyTouchArea.addEventListener('touchstart',e=>{
-    e.preventDefault();const t=e.touches[0];
-    activeJoyId='touch';placeJoystick(t.clientX,t.clientY);joyMove(t.clientX,t.clientY)
-  },{passive:false});
-  joyTouchArea.addEventListener('touchmove',e=>{
-    e.preventDefault();if(!e.touches.length)return;const t=e.touches[0];joyMove(t.clientX,t.clientY)
-  },{passive:false});
-  joyTouchArea.addEventListener('touchend',e=>{e.preventDefault();joyEnd('touch')},{passive:false});
+  boostWrap.addEventListener('touchstart',e=>{e.preventDefault();startBoost('touch')},{passive:false});
+  boostWrap.addEventListener('touchend',e=>{e.preventDefault();endBoost('touch')},{passive:false});
+}
+
+function handleOrientation(e){
+  if(!motionEnabled)return;
+
+  // For portrait orientation, gamma is left/right tilt.
+  let g=typeof e.gamma==='number'?e.gamma:0;
+
+  // clamp and deadzone
+  lastTiltDeg=g;
+  const abs=Math.abs(g);
+  if(abs<CFG.tiltDeadzone){
+    steer=0;
+  }else{
+    const sign=Math.sign(g);
+    steer=sign*clamp((abs-CFG.tiltDeadzone)/(CFG.tiltMax-CFG.tiltDeadzone),0,1);
+  }
+
+  phoneIcon.style.transform=`translate(-50%,-50%) rotate(${clamp(g,-18,18)*.9}deg)`;
+}
+
+async function requestMotionPermission(){
+  try{
+    if(typeof DeviceOrientationEvent!=='undefined' &&
+       typeof DeviceOrientationEvent.requestPermission==='function'){
+      const res=await DeviceOrientationEvent.requestPermission();
+      if(res==='granted'){
+        motionEnabled=true;
+        addEventListener('deviceorientation',handleOrientation,true);
+        tiltHint.textContent='TILT TO STEER';
+        return true;
+      }
+      return false;
+    }else{
+      motionEnabled=true;
+      addEventListener('deviceorientation',handleOrientation,true);
+      tiltHint.textContent='TILT TO STEER';
+      return true;
+    }
+  }catch(e){
+    return false;
+  }
 }
 
 addEventListener('keydown',e=>{
-  if(e.code==='ArrowLeft'||e.code==='KeyA')joyX=-1;
-  if(e.code==='ArrowRight'||e.code==='KeyD')joyX=1;
-  if(e.code==='Space'&&!charging)startCharge('kbd');
+  if(e.code==='ArrowLeft'||e.code==='KeyA')keyboardSteer=-1;
+  if(e.code==='ArrowRight'||e.code==='KeyD')keyboardSteer=1;
+  if(e.code==='Space'&&!charging)startBoost('kbd');
 });
 addEventListener('keyup',e=>{
-  if(['ArrowLeft','KeyA','ArrowRight','KeyD'].includes(e.code))joyX=0;
-  if(e.code==='Space')endCharge('kbd');
+  if(['ArrowLeft','KeyA','ArrowRight','KeyD'].includes(e.code))keyboardSteer=0;
+  if(e.code==='Space')endBoost('kbd');
 });
 
-function begin(){
-  overlay.style.display='none';state='playing';reset();updateChargeUI();
+async function begin(){
+  const ok=await requestMotionPermission();
+  if(!ok){
+    tiltHint.textContent='MOTION BLOCKED — USE A / D';
+  }
+  overlay.style.display='none';
+  state='playing';
+  reset();
+
+  // start the first automatic bounce almost immediately
+  setTimeout(()=>{
+    if(state==='playing' && doge.vy===0) autoBounce(1);
+  },180);
 }
 playBtn.addEventListener('click',begin);
 playBtn.addEventListener('touchend',e=>{e.preventDefault();begin()},{passive:false});
 
 function gameOver(){
-  state='gameover';best=Math.max(best,highest);safeSaveBest(best);
+  state='gameover';
+  best=Math.max(best,highest);safeSaveBest(best);
   overlay.innerHTML=`<div class="card"><h1>YOU FELL</h1>
   <p>Altitude: <b>${Math.floor(highest).toLocaleString()} m</b><br>
-  Best: <b>${Math.floor(best).toLocaleString()} m</b><br>
-  Perfects: <b>${combo}</b></p>
+  Best: <b>${Math.floor(best).toLocaleString()} m</b></p>
   <button id="retry">RETRY</button></div>`;
   overlay.style.display='grid';
-  $('retry').onclick=begin;
+  $('retry').onclick=()=>{overlay.style.display='none';state='playing';reset();setTimeout(()=>autoBounce(1),160)};
 }
 
 function update(dt){
   if(state!=='playing')return;
 
   if(charging){
-    charge=clamp(charge+dt/CFG.chargeTime,0,1);
-    updateChargeUI();
+    boostCharge=clamp(boostCharge+dt/CFG.boostTime,0,1);
+    updateBoostUI();
   }
 
-  doge.vx+=joyX*CFG.airAccel*dt;
+  const input=keyboardSteer!==0?keyboardSteer:steer;
+
+  doge.vx+=input*CFG.airAccel*dt;
   doge.vx=clamp(doge.vx,-CFG.maxX,CFG.maxX);
   doge.vx*=Math.pow(CFG.damping,dt*60);
   doge.vy+=CFG.gravity*grav(highest)*dt;
@@ -414,6 +426,7 @@ function update(dt){
   doge.x+=doge.vx*dt;
   doge.y+=doge.vy*dt;
   doge.x=clamp(doge.x,0,W-doge.w);
+
   doge.onGround=false;
 
   for(const p of platforms){
@@ -421,7 +434,7 @@ function update(dt){
     if(p.type==='moving') p.x=p.baseX+Math.sin(p.t*1.35)*Math.min(58,W*.13);
     if(p.type==='crumble'&&p.crumble>0){
       p.crumble+=dt;
-      if(p.crumble>1.0)p.dead=true;
+      if(p.crumble>1)p.dead=true;
     }
   }
 
@@ -432,28 +445,33 @@ function update(dt){
     for(const p of platforms){
       if(p.dead)continue;
       const hitX=doge.x+doge.w>p.x && doge.x<p.x+p.w;
+
       if(hitX && prevBottom<=p.y && nowBottom>=p.y && nowBottom<=p.y+32){
         doge.y=p.y-doge.h;
 
-        if(p.type==='bounce'){
-          doge.vy=-CFG.maxJump*.94;
-          doge.doubleReady=true;
-          puff(doge.x+doge.w/2,p.y,16,'burst');
-        }else{
-          doge.vy=0;doge.onGround=true;doge.doubleReady=true;
-          if(p.type==='crumble'&&p.crumble===0)p.crumble=.001;
+        if(p.type==='crumble'&&p.crumble===0)p.crumble=.001;
 
-          const perfect=Math.abs((doge.x+doge.w/2)-(p.x+p.w/2))<p.w*.17;
-          if(perfect){
-            combo=Math.min(combo+1,8);
-            comboEl.textContent=`PERFECT x${combo}`;
-            comboEl.style.opacity=1;
-            puff(doge.x+doge.w/2,p.y,11,'spark');
-            if(navigator.vibrate)navigator.vibrate(7);
-          }else{
-            combo=0;comboEl.style.opacity=0;
-          }
+        const center=(doge.x+doge.w/2);
+        const pc=p.x+p.w/2;
+        const perfect=Math.abs(center-pc)<p.w*.17;
+
+        if(perfect){
+          combo=Math.min(combo+1,8);
+          comboEl.textContent=`PERFECT x${combo}`;
+          comboEl.style.opacity=1;
+          puff(center,p.y,11,'spark');
+        }else{
+          combo=0;
+          comboEl.style.opacity=0;
         }
+
+        if(p.type==='bounce'){
+          autoBounce(1.22);
+          puff(center,p.y,16,'burst');
+        }else{
+          autoBounce(1);
+        }
+
         break;
       }
     }
@@ -466,7 +484,10 @@ function update(dt){
   altEl.textContent=`${Math.floor(highest).toLocaleString()} m`;
 
   let targ='SPACE',pct=clamp(highest/18000*100,0,100);
-  if(highest>=18000){targ='MOON';pct=clamp((highest-18000)/14000*100,0,100)}
+  if(highest>=18000){
+    targ='MOON';
+    pct=clamp((highest-18000)/14000*100,0,100);
+  }
   targetEl.innerHTML=`TARGET<br>${targ} ${Math.floor(pct)}%`;
 
   while(nextSpawnY>cameraY-1600)spawnPlatform();
@@ -477,7 +498,6 @@ function update(dt){
   }
   particles=particles.filter(q=>q.life>0);
 
-  // The bottom control bar is a non-gameplay area. Falling into it ends the run.
   if(doge.y-cameraY>PLAY_H+CFG.deathPad)gameOver();
 }
 
@@ -486,52 +506,52 @@ function drawCloudPlatform(p,y){
   const space=(z==='SPACE'||z==='MOON');
 
   if(space){
-    ctx.fillStyle=p.type==='crumble'?'#c7b798':'#cfd5df';
+    ctx.fillStyle=p.type==='crumble'?'#c4ae8d':'#cfd5df';
     rr(p.x,y,p.w,p.h,9);
-    ctx.fillStyle='rgba(255,255,255,.15)';
-    rr(p.x+7,y+3,p.w-14,5,3);
+    ctx.fillStyle='rgba(255,255,255,.14)';
+    rr(p.x+8,y+3,p.w-16,5,3);
   }else{
-    ctx.fillStyle=p.type==='crumble'?'#e8d3b5':'#eaf8ff';
-    const h=p.h;
-    rr(p.x,y,p.w,h,10);
-    ctx.globalAlpha=.9;
+    ctx.fillStyle=p.type==='crumble'?'#e7d1b0':'#edf9ff';
+    rr(p.x,y,p.w,p.h,10);
+
+    ctx.globalAlpha=.92;
     ctx.beginPath();
-    ctx.arc(p.x+p.w*.24,y+1,14,0,Math.PI*2);
-    ctx.arc(p.x+p.w*.46,y-4,18,0,Math.PI*2);
+    ctx.arc(p.x+p.w*.23,y+2,14,0,Math.PI*2);
+    ctx.arc(p.x+p.w*.45,y-4,18,0,Math.PI*2);
     ctx.arc(p.x+p.w*.68,y+1,13,0,Math.PI*2);
     ctx.fill();
     ctx.globalAlpha=1;
   }
 
   if(p.type==='moving'){
-    ctx.strokeStyle='rgba(55,107,150,.65)';ctx.lineWidth=2;
+    ctx.strokeStyle='rgba(70,110,150,.68)';
+    ctx.lineWidth=2;
     ctx.beginPath();
-    ctx.moveTo(p.x+p.w*.34,y+p.h/2);
+    ctx.moveTo(p.x+p.w*.35,y+p.h/2);
     ctx.lineTo(p.x+p.w*.22,y+p.h/2);
-    ctx.moveTo(p.x+p.w*.66,y+p.h/2);
+    ctx.moveTo(p.x+p.w*.65,y+p.h/2);
     ctx.lineTo(p.x+p.w*.78,y+p.h/2);
     ctx.stroke();
   }
 
   if(p.type==='bounce'){
-    ctx.strokeStyle='#5fd28d';ctx.lineWidth=3;
+    ctx.strokeStyle='#5fd28d';
+    ctx.lineWidth=3;
     ctx.beginPath();
     ctx.arc(p.x+p.w/2,y+p.h/2,10,0,Math.PI*2);
     ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(p.x+p.w/2,y+p.h/2,18,0,Math.PI*2);
-    ctx.globalAlpha=.35;ctx.stroke();ctx.globalAlpha=1;
   }
 
   if(p.type==='crumble'&&p.crumble>0){
-    ctx.strokeStyle='#8d7658';ctx.lineWidth=2.2;
+    ctx.strokeStyle='#8d7658';
+    ctx.lineWidth=2.1;
     ctx.beginPath();
-    ctx.moveTo(p.x+p.w*.42,y);
-    ctx.lineTo(p.x+p.w*.50,y+7);
+    ctx.moveTo(p.x+p.w*.43,y);
+    ctx.lineTo(p.x+p.w*.50,y+8);
     ctx.lineTo(p.x+p.w*.46,y+p.h);
     ctx.moveTo(p.x+p.w*.58,y);
     ctx.lineTo(p.x+p.w*.53,y+8);
-    ctx.lineTo(p.x+p.w*.60,y+p.h);
+    ctx.lineTo(p.x+p.w*.61,y+p.h);
     ctx.stroke();
   }
 }
@@ -541,16 +561,16 @@ function drawDoge(){
   ctx.save();
   ctx.translate(x+doge.w/2,y+doge.h/2);
 
-  const sq=charging?1-charge*.12:1;
-  ctx.scale(1+(1-sq)*.42,sq);
+  const rising=doge.vy<0;
+  const stretch=rising?1.04:1;
+  ctx.scale(.98,stretch);
 
-  // tail behind
+  // tail
   ctx.strokeStyle='#d88943';ctx.lineWidth=7;ctx.lineCap='round';
   ctx.beginPath();ctx.arc(20,2,11,-1.4,1.3);ctx.stroke();
 
   // body
-  ctx.fillStyle='#d88943';
-  rr(-19,-5,38,27,13);
+  ctx.fillStyle='#d88943';rr(-19,-5,38,27,13);
 
   // chest
   ctx.fillStyle='#f3e3cf';
@@ -566,26 +586,28 @@ function drawDoge(){
   ctx.beginPath();
   ctx.moveTo(14,-27);ctx.lineTo(10,-42);ctx.lineTo(2,-28);ctx.closePath();ctx.fill();
 
-  // inner ears
-  ctx.fillStyle='#78462f';ctx.globalAlpha=.52;
+  ctx.fillStyle='#78462f';ctx.globalAlpha=.50;
   ctx.beginPath();ctx.moveTo(-11,-29);ctx.lineTo(-9,-38);ctx.lineTo(-5,-29);ctx.closePath();ctx.fill();
   ctx.beginPath();ctx.moveTo(11,-29);ctx.lineTo(9,-38);ctx.lineTo(5,-29);ctx.closePath();ctx.fill();
   ctx.globalAlpha=1;
 
-  // mask / cheeks
+  // cream mask
   ctx.fillStyle='#f4e5d1';
   ctx.beginPath();ctx.ellipse(-7,-12,8,8,-.25,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.ellipse(7,-12,8,8,.25,0,Math.PI*2);ctx.fill();
   ctx.beginPath();ctx.ellipse(0,-7,10,7,0,0,Math.PI*2);ctx.fill();
 
-  // eyes
+  // face
   ctx.fillStyle='#202020';
   ctx.beginPath();ctx.arc(-6,-18,2.1,0,Math.PI*2);ctx.arc(6,-18,2.1,0,Math.PI*2);ctx.fill();
-
-  // nose and mouth
   ctx.beginPath();ctx.arc(0,-9,2.6,0,Math.PI*2);ctx.fill();
+
   ctx.strokeStyle='#202020';ctx.lineWidth=1.5;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(0,-4);ctx.moveTo(0,-4);ctx.quadraticCurveTo(-4,-2,-6,-4);ctx.moveTo(0,-4);ctx.quadraticCurveTo(4,-2,6,-4);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0,-7);ctx.lineTo(0,-4);
+  ctx.moveTo(0,-4);ctx.quadraticCurveTo(-4,-2,-6,-4);
+  ctx.moveTo(0,-4);ctx.quadraticCurveTo(4,-2,6,-4);
+  ctx.stroke();
 
   // tiny legs
   ctx.fillStyle='#d88943';
@@ -601,12 +623,11 @@ function draw(){
   g.addColorStop(0,a);g.addColorStop(1,b);
   ctx.fillStyle=g;ctx.fillRect(0,0,W,PLAY_H);
 
-  // atmosphere/cloud accents
   if(highest<10000){
-    ctx.globalAlpha=.10;
+    ctx.globalAlpha=.09;
     ctx.fillStyle='#fff';
     for(let i=0;i<5;i++){
-      const yy=((i*170 + (cameraY*.08))%(PLAY_H+220))-110;
+      const yy=((i*170+(cameraY*.08))%(PLAY_H+220))-110;
       rr(-40+i*85,yy,180,28,18);
     }
     ctx.globalAlpha=1;
@@ -619,13 +640,18 @@ function draw(){
     ctx.globalAlpha=1;
   }
 
-  // Earth below in space
   if(highest>16500){
     const t=clamp((highest-16500)/8500,0,1);
     const ey=PLAY_H+150-t*55;
-    ctx.fillStyle='#337aca';ctx.beginPath();ctx.arc(W/2,ey,W*.73,Math.PI,Math.PI*2);ctx.fill();
-    ctx.globalAlpha=.36;ctx.fillStyle='#7fc46e';
-    ctx.beginPath();ctx.ellipse(W*.42,ey-30,W*.17,28,-.25,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#337aca';
+    ctx.beginPath();
+    ctx.arc(W/2,ey,W*.73,Math.PI,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=.36;
+    ctx.fillStyle='#7fc46e';
+    ctx.beginPath();
+    ctx.ellipse(W*.42,ey-30,W*.17,28,-.25,0,Math.PI*2);
+    ctx.fill();
     ctx.globalAlpha=1;
   }
 
@@ -639,28 +665,35 @@ function draw(){
 
   for(const q of particles){
     ctx.globalAlpha=clamp(q.life*2.2,0,1);
-    ctx.fillStyle=q.kind==='spark'?'#fff7ba':'#ffffff';
-    ctx.beginPath();ctx.arc(q.x,sy(q.y),q.r,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=q.kind==='spark'?'#fff7ba':'#fff';
+    ctx.beginPath();
+    ctx.arc(q.x,sy(q.y),q.r,0,Math.PI*2);
+    ctx.fill();
   }
   ctx.globalAlpha=1;
 
   drawDoge();
 
   if(highest>=32000){
-    ctx.fillStyle='#fff';ctx.font='900 28px -apple-system,sans-serif';
-    ctx.textAlign='center';ctx.fillText('MOON REACHED!',W/2,112);
+    ctx.fillStyle='#fff';
+    ctx.font='900 28px -apple-system,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('MOON REACHED!',W/2,112);
   }
 
-  // subtle separator above control zone
   const fade=ctx.createLinearGradient(0,PLAY_H-40,0,PLAY_H);
   fade.addColorStop(0,'rgba(6,9,20,0)');
-  fade.addColorStop(1,'rgba(6,9,20,.22)');
-  ctx.fillStyle=fade;ctx.fillRect(0,PLAY_H-40,W,40);
+  fade.addColorStop(1,'rgba(6,9,20,.24)');
+  ctx.fillStyle=fade;
+  ctx.fillRect(0,PLAY_H-40,W,40);
 }
 
 function loop(now){
-  const dt=Math.min((now-last)/1000,.033);last=now;
-  update(dt);draw();requestAnimationFrame(loop);
+  const dt=Math.min((now-last)/1000,.033);
+  last=now;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
