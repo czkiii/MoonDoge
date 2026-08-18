@@ -3,8 +3,8 @@
   "short_name": "Moon Doge",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#080c1c",
-  "theme_color": "#080c1c",
+  "background_color": "#07101f",
+  "theme_color": "#07101f",
   "orientation": "portrait",
   "icons": [
     {
