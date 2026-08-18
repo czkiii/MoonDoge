@@ -12,7 +12,7 @@
 <title>Moon Doge</title>
 <style>
 :root{--safe-b:max(18px,env(safe-area-inset-bottom));--safe-t:max(14px,env(safe-area-inset-top));--control-h:22vh}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#07101f;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none;overscroll-behavior:none}
 body{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 #hud{position:fixed;inset:0;pointer-events:none;color:#fff;text-shadow:0 2px 8px #000c;font-weight:800;z-index:2}
@@ -25,10 +25,10 @@ body{position:fixed;inset:0}canvas{display:block;width:100%;height:100%}
 #zoneName{position:absolute;top:88px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:2px;padding:6px 10px;border-radius:999px;background:rgba(5,10,24,.32);opacity:.86;white-space:nowrap}
 #warning{position:absolute;top:124px;left:50%;transform:translateX(-50%);font-size:14px;letter-spacing:1px;opacity:0;padding:7px 12px;border-radius:999px;background:rgba(118,16,18,.62);border:1px solid rgba(255,130,120,.24);white-space:nowrap}
 #status{position:absolute;top:162px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:.8px;padding:6px 10px;border-radius:999px;background:rgba(5,10,24,.36);white-space:nowrap}
-#controlZone{position:fixed;left:0;right:0;bottom:0;height:var(--control-h);z-index:3;pointer-events:auto;background:linear-gradient(to bottom,rgba(6,10,24,0),rgba(6,10,24,.70) 42%,rgba(6,10,24,.92));border-top:1px solid rgba(255,255,255,.06)}
-#boostWrap{position:absolute;left:22px;bottom:var(--safe-b);width:148px;height:148px;display:grid;place-items:center}
-#boost{position:absolute;inset:8px;border-radius:50%;background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.42);display:grid;place-items:center;box-shadow:0 8px 28px #0004}
-#boostCore{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.10);font-weight:900;font-size:15px;letter-spacing:.6px;text-align:center}
+#controlZone{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:fixed;left:0;right:0;bottom:0;height:var(--control-h);z-index:3;pointer-events:auto;background:linear-gradient(to bottom,rgba(6,10,24,0),rgba(6,10,24,.70) 42%,rgba(6,10,24,.92));border-top:1px solid rgba(255,255,255,.06)}
+#boostWrap{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:absolute;left:22px;bottom:var(--safe-b);width:148px;height:148px;display:grid;place-items:center}
+#boost{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:absolute;inset:8px;border-radius:50%;background:rgba(255,255,255,.09);border:2px solid rgba(255,255,255,.42);display:grid;place-items:center;box-shadow:0 8px 28px #0004}
+#boostCore{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;pointer-events:none;width:92px;height:92px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.10);font-weight:900;font-size:15px;letter-spacing:.6px;text-align:center}
 #boostMeter{position:absolute;inset:0;width:148px;height:148px;transform:rotate(-90deg)}
 #boostTrack,#boostProgress{fill:none;stroke-width:8}#boostTrack{stroke:rgba(255,255,255,.12)}#boostProgress{stroke:#fff;stroke-linecap:round;stroke-dasharray:389;stroke-dashoffset:389;filter:drop-shadow(0 0 7px rgba(255,255,255,.5))}
 #boostWrap.disabled{opacity:.42}
@@ -138,7 +138,13 @@ function doBoost(p){if(!boostReady)return;doge.vy-=(CFG.boostMin+(CFG.boostMax-C
 function updateBoostUI(){let c=389;boostProgress.style.strokeDashoffset=String(c*(1-boostCharge));boostCore.textContent=charging?`${Math.round(boostCharge*100)}%`:(boostReady?'BOOST':'USED');boostWrap.classList.toggle('disabled',!boostReady&&!charging)}
 function startBoost(id){if(state!=='playing'||boostId!==null||!boostReady)return;boostId=id;charging=true;boostCharge=0;updateBoostUI()}
 function endBoost(id){if(id!==boostId)return;if(charging&&boostReady)doBoost(boostCharge);charging=false;boostCharge=0;boostId=null;updateBoostUI()}
+['selectstart','contextmenu','dragstart'].forEach(type=>{
+  document.addEventListener(type,e=>{
+    if(e.target.closest && (e.target.closest('#controlZone') || e.target===canvas)) e.preventDefault();
+  },{passive:false});
+});
 if('PointerEvent'in window){boostWrap.addEventListener('pointerdown',e=>{e.preventDefault();boostWrap.setPointerCapture?.(e.pointerId);startBoost(e.pointerId)});boostWrap.addEventListener('pointerup',e=>{e.preventDefault();endBoost(e.pointerId)});boostWrap.addEventListener('pointercancel',e=>endBoost(e.pointerId))}
+boostWrap.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 function handleOrientation(e){if(!motionEnabled)return;const g=typeof e.gamma==='number'?e.gamma:0,a=Math.abs(g);steer=a<CFG.tiltDeadzone?0:Math.sign(g)*clamp((a-CFG.tiltDeadzone)/(CFG.tiltMax-CFG.tiltDeadzone),0,1);phoneIcon.style.transform=`translate(-50%,-50%) rotate(${clamp(g,-18,18)}deg)`}
 async function requestMotion(){try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){if(await DeviceOrientationEvent.requestPermission()!=='granted')return false}motionEnabled=true;addEventListener('deviceorientation',handleOrientation,true);return true}catch(e){return false}}
 addEventListener('keydown',e=>{if(e.code==='ArrowLeft'||e.code==='KeyA')keySteer=-1;if(e.code==='ArrowRight'||e.code==='KeyD')keySteer=1;if(e.code==='Space'&&!charging)startBoost('kbd')});
