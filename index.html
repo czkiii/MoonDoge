@@ -112,6 +112,7 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
       <div class="toggleLine"><span>HIGH CONTRAST WARNINGS</span><button id="contrastToggle" class="handBtn">OFF</button></div>
       <div class="toggleLine"><span>LARGER UI</span><button id="largeUiToggle" class="handBtn">OFF</button></div>
       <button id="calibrateBtn">CALIBRATE GYRO</button>
+      <button id="resetGyroBtn">RESET GYRO & SENSITIVITY</button>
       <div id="calibrationReadout">CENTER: 0.0°</div>
     </div>
     <button id="settingsClose" class="panelClose">DONE</button>
@@ -131,7 +132,7 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
 (()=>{'use strict';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const altEl=$('alt'),targetEl=$('target'),comboEl=$('combo'),zoneName=$('zoneName'),warningEl=$('warning'),statusEl=$('status'),progressFill=$('progressFill'),panicFill=$('panicFill'),focusBadge=$('focusBadge');
-const overlay=$('overlay'),playBtn=$('play'),boostWrap=$('boostWrap'),boostCore=$('boostCore'),boostProgress=$('boostProgress'),phoneIcon=$('phoneIcon'),settingsBtn=$('settingsBtn'),pauseBtn=$('pauseBtn'),settingsPanel=$('settingsPanel'),pausePanel=$('pausePanel'),settingsClose=$('settingsClose'),resumeBtn=$('resumeBtn'),leftHandBtn=$('leftHandBtn'),rightHandBtn=$('rightHandBtn'),sensitivityRange=$('sensitivityRange'),audioToggle=$('audioToggle'),touchToggle=$('touchToggle'),motionToggle=$('motionToggle'),contrastToggle=$('contrastToggle'),largeUiToggle=$('largeUiToggle'),calibrateBtn=$('calibrateBtn'),calibrationReadout=$('calibrationReadout');
+const overlay=$('overlay'),playBtn=$('play'),boostWrap=$('boostWrap'),boostCore=$('boostCore'),boostProgress=$('boostProgress'),phoneIcon=$('phoneIcon'),settingsBtn=$('settingsBtn'),pauseBtn=$('pauseBtn'),settingsPanel=$('settingsPanel'),pausePanel=$('pausePanel'),settingsClose=$('settingsClose'),resumeBtn=$('resumeBtn'),leftHandBtn=$('leftHandBtn'),rightHandBtn=$('rightHandBtn'),sensitivityRange=$('sensitivityRange'),audioToggle=$('audioToggle'),touchToggle=$('touchToggle'),motionToggle=$('motionToggle'),contrastToggle=$('contrastToggle'),largeUiToggle=$('largeUiToggle'),calibrateBtn=$('calibrateBtn'),resetGyroBtn=$('resetGyroBtn'),calibrationReadout=$('calibrationReadout');
 
 let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2),CONTROL_H=Math.max(200,H*.22),PLAY_H=H-CONTROL_H;
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);CONTROL_H=Math.max(200,H*.22);PLAY_H=H-CONTROL_H;document.documentElement.style.setProperty('--control-h',CONTROL_H+'px');canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
@@ -257,7 +258,7 @@ function spawnPlatform(){
 function puff(x,y,n=8,kind='soft'){for(let i=0;i<n;i++)particles.push({x,y,vx:rand(-115,115),vy:rand(-175,-20),life:rand(.28,.64),r:rand(2,5.8),kind})}
 function warn(t,s=.8){warningEl.textContent=t;warningEl.style.opacity=1;warningTimer=s;if(audioEnabled&&(/METEOR|GALE|ROCKET|UFO|ANOMALY|CHAOS|MAJOR/.test(t)))tone(260,.06,.03,'sine')}
 
-function autoBounce(mult=1){doge.vy=-CFG.autoJump*mult*Math.sqrt(gravity(highest));boostReady=true;doge.spin+=(Math.random()<.5?-1:1)*rand(3.4,5.8);puff(doge.x+27,doge.y+52,9,'soft');updateBoostUI()}
+function autoBounce(mult=1){doge.vy=-CFG.autoJump*mult*Math.sqrt(gravity(highest));boostReady=true;doge.spin+=(Math.random()<.5?-1:1)*rand(2.8,4.6);puff(doge.x+27,doge.y+52,9,'soft');updateBoostUI()}
 function doBoost(p){if(!boostReady)return;doge.vy-=(CFG.boostMin+(CFG.boostMax-CFG.boostMin)*p)*Math.sqrt(gravity(highest));doge.vy=Math.max(doge.vy,-1200);boostReady=false;if(p>.82)slowActive=Math.max(slowActive,.18);zoomPulse=Math.max(zoomPulse,.16);puff(doge.x+27,doge.y+52,24,'fart');tone(145,.06,.06,'square');setTimeout(()=>tone(90,.08,.04,'square'),35);updateBoostUI()}
 function updateBoostUI(){let c=389;boostProgress.style.strokeDashoffset=String(c*(1-boostCharge));boostCore.dataset.label=charging?`${Math.round(boostCharge*100)}%`:(boostReady?'BOOST':'USED');boostCore.setAttribute('aria-label',boostCore.dataset.label);boostWrap.classList.toggle('disabled',!boostReady&&!charging)}
 function startBoost(id){if(state!=='playing'||paused||boostId!==null||!boostReady)return;boostId=id;charging=true;boostCharge=0;updateBoostUI()}
@@ -317,8 +318,14 @@ settingsBtn.addEventListener('click',e=>{
   settingsWasPaused=paused;
   if(state==='playing'&&!paused)paused=true;
   settingsPanel.style.display='grid';
-  applyHandedness();
-
+  applyHandedness();applySettings();
+});
+settingsClose.addEventListener('click',e=>{
+  e.preventDefault();settingsPanel.style.display='none';
+  if(state==='playing'&&!settingsWasPaused)paused=false;
+});
+leftHandBtn.addEventListener('click',e=>{e.preventDefault();handedness='left';safeSet('moonDogeHandedness','left');applyHandedness()});
+rightHandBtn.addEventListener('click',e=>{e.preventDefault();handedness='right';safeSet('moonDogeHandedness','right');applyHandedness()});
 sensitivityRange.addEventListener('input',()=>{sensitivity=parseFloat(sensitivityRange.value);safeSet('moonDogeSensitivity',String(sensitivity))});
 audioToggle.addEventListener('click',()=>{audioEnabled=!audioEnabled;safeSet('moonDogeAudio',audioEnabled?'1':'0');applySettings();if(audioEnabled)ensureAudio()});
 touchToggle.addEventListener('click',()=>{touchFallback=!touchFallback;safeSet('moonDogeTouchFallback',touchFallback?'1':'0');applySettings()});
@@ -326,30 +333,20 @@ motionToggle.addEventListener('click',()=>{reducedMotion=!reducedMotion;safeSet(
 contrastToggle.addEventListener('click',()=>{highContrast=!highContrast;safeSet('moonDogeHighContrast',highContrast?'1':'0');applySettings()});
 largeUiToggle.addEventListener('click',()=>{largeUi=!largeUi;safeSet('moonDogeLargeUi',largeUi?'1':'0');applySettings()});
 calibrateBtn.addEventListener('click',()=>{gyroCenter=lastGamma;safeSet('moonDogeGyroCenter',String(gyroCenter));applySettings();warn('GYRO CALIBRATED',.5)});
-applySettings();
-
+resetGyroBtn.addEventListener('click',()=>{
+  gyroCenter=0;
+  sensitivity=1;
+  safeSet('moonDogeGyroCenter','0');
+  safeSet('moonDogeSensitivity','1');
+  steer=0;
+  keySteer=0;
+  applySettings();
+  warn('GYRO + SENSITIVITY RESET',.65);
 });
-settingsClose.addEventListener('click',e=>{
-  e.preventDefault();settingsPanel.style.display='none';
-  if(state==='playing'&&!settingsWasPaused)paused=false;
-});
-leftHandBtn.addEventListener('click',e=>{
-  e.preventDefault();handedness='left';safeSet('moonDogeHandedness','left');applyHandedness();
-});
-rightHandBtn.addEventListener('click',e=>{
-  e.preventDefault();handedness='right';safeSet('moonDogeHandedness','right');applyHandedness();
-});
-pauseBtn.addEventListener('click',e=>{
-  e.preventDefault();
-  if(state!=='playing')return;
-  setPaused(!paused);
-});
+pauseBtn.addEventListener('click',e=>{e.preventDefault();if(state!=='playing')return;setPaused(!paused)});
 resumeBtn.addEventListener('click',e=>{e.preventDefault();setPaused(false)});
-document.addEventListener('visibilitychange',()=>{
-  if(document.hidden&&state==='playing'&&!paused)setPaused(true);
-});
-applyHandedness();
-
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing'&&!paused)setPaused(true)});
+applyHandedness();applySettings();
 
 document.addEventListener('touchmove',e=>{
   if(!touchFallback||state!=='playing'||paused)return;
@@ -363,8 +360,21 @@ document.addEventListener('touchmove',e=>{
 },{passive:true});
 document.addEventListener('touchend',()=>{if(touchFallback)steer=0},{passive:true});
 
-async function begin(){ensureAudio();await requestMotion();overlay.style.display='none';state='playing';paused=false;pausePanel.style.display='none';reset();setTimeout(()=>autoBounce(1),150)}
-playBtn.addEventListener('click',begin);playBtn.addEventListener('touchend',e=>{e.preventDefault();begin()},{passive:false});
+let starting=false;
+function begin(){
+  if(starting||state==='playing')return;
+  starting=true;
+  clearGameSelection();
+  // Start the game immediately. Gyro permission is requested from the same user gesture,
+  // but failure/slow permission UI must never block LAUNCH.
+  try{ensureAudio()}catch(e){}
+  try{requestMotion().catch(()=>{})}catch(e){}
+  overlay.style.display='none';
+  state='playing';paused=false;pausePanel.style.display='none';
+  reset();
+  setTimeout(()=>{if(state==='playing'&&!paused)autoBounce(1);starting=false},150);
+}
+playBtn.addEventListener('click',e=>{e.preventDefault();begin()});
 
 function hit(px,py,power=1){
   if(hitCooldown>0)return;
@@ -562,7 +572,7 @@ function update(dt0){
   doge.vx+=(input*CFG.airAccel*steerScale+fairWind+turbulence)*dt;
   if(surfaceType==='sticky'&&surfaceTimer>0)doge.vx*=Math.pow(.78,dt*60);
   doge.vx=clamp(doge.vx,-CFG.maxX,CFG.maxX);doge.vx*=Math.pow(CFG.damping,dt*60);
-  doge.vy+=CFG.gravity*gravity(highest)*dt;doge.x+=doge.vx*dt;doge.y+=doge.vy*dt;doge.rot+=doge.spin*dt;doge.spin*=Math.pow(.93,dt*60);spins+=Math.abs(doge.spin*dt)/(Math.PI*2);if(Math.cos(doge.rot)<-.35)upsideTime+=dt;doge.x=clamp(doge.x,-8,W-doge.w+8);
+  doge.vy+=CFG.gravity*gravity(highest)*dt;doge.x+=doge.vx*dt;doge.y+=doge.vy*dt;doge.rot+=doge.spin*dt;doge.spin=clamp(doge.spin,-13,13);doge.spin*=Math.pow(.90,dt*60);spins+=Math.abs(doge.spin*dt)/(Math.PI*2);if(Math.cos(doge.rot)<-.35)upsideTime+=dt;doge.x=clamp(doge.x,-8,W-doge.w+8);
 
   for(const p of platforms){
     p.t+=dt;if(['moving','planeP','ring'].includes(p.type))p.x=p.baseX+Math.sin(p.t*1.2)*Math.min(66,W*.14);
@@ -597,20 +607,26 @@ function update(dt0){
         let upright=Math.min(ang,twoPI-ang);
         const spinGood=upright<0.48;
         const spinBad=upright>1.25&&upright<5.03;
+        const spinLandingEnabled=runTime>28;
 
-        if(perfect&&spinGood){
+        if(perfect&&spinGood&&spinLandingEnabled){
           combo=Math.min(8,combo+1);comboEl.textContent=`PERFECT SPIN x${combo}`;comboEl.style.opacity=1;if(combo>=8)shield=1;
-          doge.spin*=.42;doge.rot*=.35;
         }else if(perfect){
           combo=Math.min(8,combo+1);comboEl.textContent=`PERFECT x${combo}`;comboEl.style.opacity=1;if(combo>=8)shield=1;
         }else{
           combo=0;comboEl.style.opacity=0;
         }
 
-        if(spinBad){badDecisions++;
-          doge.vx+=Math.sin(ang)*95;
-          doge.faceTimer=.28;
-          warn('MESSY LANDING',.26);
+        // Always stabilize heavily on landing so the doge doesn't stay upside-down.
+        doge.spin*=spinLandingEnabled?.28:.14;
+        let signedAng=((doge.rot+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+        doge.rot-=signedAng*(spinLandingEnabled?.64:.84);
+
+        // Side-kick only starts after the opening phase, and is much weaker.
+        if(spinLandingEnabled&&spinBad){
+          doge.vx+=Math.sin(ang)*42;
+          doge.faceTimer=.22;
+          warn('MESSY LANDING',.22);
         }
         autoBounce(special);break
       }
