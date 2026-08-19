@@ -73,6 +73,14 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
 .toggleLine{display:flex;align-items:center;justify-content:space-between;gap:12px}
 #calibrationReadout{font-size:11px;opacity:.72;margin-top:4px}
 
+
+#selectStart{display:none;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.menuSecondary{background:rgba(255,255,255,.10);color:#fff;border:1px solid rgba(255,255,255,.16)}
+.startGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 4px}
+.startGrid button{min-width:0;width:100%;padding:13px 8px;margin:0;font-size:13px}
+.cpTag{font-size:10px;letter-spacing:1.5px;opacity:.62;margin-top:3px}
+#graceBadge{position:absolute;left:50%;top:228px;transform:translateX(-50%);font-size:10px;letter-spacing:1.1px;opacity:0;padding:5px 9px;border-radius:999px;background:rgba(75,155,225,.28);white-space:nowrap}
+
 </style>
 </head>
 <body>
@@ -87,6 +95,7 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
   <div id="status">🛡 —　⏱ —　⚡ READY</div>
   <div id="panicWrap"><div id="panicFill"></div></div>
   <div id="focusBadge">FOCUS MODE</div>
+  <div id="graceBadge">RE-ENTRY PROTECTION</div>
   <div id="topControls">
     <button id="settingsBtn" class="uiBtn" aria-label="Settings">⚙</button>
     <button id="pauseBtn" class="uiBtn" aria-label="Pause">⏸</button>
@@ -126,23 +135,60 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
   </div>
 </div>
 
-<div id="overlay"><div class="card"><h1>MOON DOGE</h1><p>NASA would not approve.</p><p class="small">Auto-jump · tilt to steer · BOOST in the air · survive Earth, planets, storms, UFOs and whatever comes after Voyager.</p><button id="play">LAUNCH</button></div></div>
+<div id="overlay"><div class="card"><h1>MOON DOGE</h1><p>NASA would not approve.</p><p class="small">Auto-jump · tilt to steer · BOOST in the air · survive Earth, planets, storms, UFOs and whatever comes after Voyager.</p><button id="play">LAUNCH</button><button id="selectStart" class="menuSecondary">SELECT START</button></div></div>
 
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
-const altEl=$('alt'),targetEl=$('target'),comboEl=$('combo'),zoneName=$('zoneName'),warningEl=$('warning'),statusEl=$('status'),progressFill=$('progressFill'),panicFill=$('panicFill'),focusBadge=$('focusBadge');
-const overlay=$('overlay'),playBtn=$('play'),boostWrap=$('boostWrap'),boostCore=$('boostCore'),boostProgress=$('boostProgress'),phoneIcon=$('phoneIcon'),settingsBtn=$('settingsBtn'),pauseBtn=$('pauseBtn'),settingsPanel=$('settingsPanel'),pausePanel=$('pausePanel'),settingsClose=$('settingsClose'),resumeBtn=$('resumeBtn'),leftHandBtn=$('leftHandBtn'),rightHandBtn=$('rightHandBtn'),sensitivityRange=$('sensitivityRange'),audioToggle=$('audioToggle'),touchToggle=$('touchToggle'),motionToggle=$('motionToggle'),contrastToggle=$('contrastToggle'),largeUiToggle=$('largeUiToggle'),calibrateBtn=$('calibrateBtn'),resetGyroBtn=$('resetGyroBtn'),calibrationReadout=$('calibrationReadout');
+const altEl=$('alt'),targetEl=$('target'),comboEl=$('combo'),zoneName=$('zoneName'),warningEl=$('warning'),statusEl=$('status'),progressFill=$('progressFill'),panicFill=$('panicFill'),focusBadge=$('focusBadge'),graceBadge=$('graceBadge');
+const overlay=$('overlay'),playBtn=$('play'),selectStartBtn=$('selectStart'),boostWrap=$('boostWrap'),boostCore=$('boostCore'),boostProgress=$('boostProgress'),phoneIcon=$('phoneIcon'),settingsBtn=$('settingsBtn'),pauseBtn=$('pauseBtn'),settingsPanel=$('settingsPanel'),pausePanel=$('pausePanel'),settingsClose=$('settingsClose'),resumeBtn=$('resumeBtn'),leftHandBtn=$('leftHandBtn'),rightHandBtn=$('rightHandBtn'),sensitivityRange=$('sensitivityRange'),audioToggle=$('audioToggle'),touchToggle=$('touchToggle'),motionToggle=$('motionToggle'),contrastToggle=$('contrastToggle'),largeUiToggle=$('largeUiToggle'),calibrateBtn=$('calibrateBtn'),resetGyroBtn=$('resetGyroBtn'),calibrationReadout=$('calibrationReadout');
 
 let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2),CONTROL_H=Math.max(200,H*.22),PLAY_H=H-CONTROL_H;
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);CONTROL_H=Math.max(200,H*.22);PLAY_H=H-CONTROL_H;document.documentElement.style.setProperty('--control-h',CONTROL_H+'px');canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
 addEventListener('resize',resize,{passive:true});addEventListener('orientationchange',()=>setTimeout(resize,120),{passive:true});resize();
 
 const CFG={gravity:1480,autoJump:820,airAccel:1220,maxX:535,damping:.915,boostMin:340,boostMax:730,boostTime:.72,tiltDeadzone:3,tiltMax:20,moon:220000,mars:520000,jupiter:900000,saturn:1350000,voyager:2200000};
+const CHECKPOINTS={
+  MOON:{alt:CFG.moon,type:'cpMoon',intro:'LUNAR RELAY ONLINE',sub:'Low gravity. High confidence. Questionable dog.'},
+  MARS:{alt:CFG.mars,type:'cpMars',intro:'RED DUST RE-ENTRY',sub:'Mars control confirms one unauthorized Shiba.'},
+  JUPITER:{alt:CFG.jupiter,type:'cpJupiter',intro:'JOVIAN GRAVITY WARNING',sub:'Mission Control recommends not thinking about it.'},
+  SATURN:{alt:CFG.saturn,type:'cpSaturn',intro:'RING APPROACH',sub:'Please keep paws inside the spacecraft.'}
+};
+const CP_ORDER=['MOON','MARS','JUPITER','SATURN'];
+let reachedCheckpoints=new Set();
+function cpWorldY(name){return PLAY_H-72-CHECKPOINTS[name].alt/54}
+function loadCheckpointUnlocks(){
+  try{const a=JSON.parse(localStorage.getItem('moonDogeCheckpointUnlocks')||'["EARTH"]');return new Set(['EARTH',...(Array.isArray(a)?a:[])])}catch(e){return new Set(['EARTH'])}
+}
+function saveCheckpointUnlocks(set){try{localStorage.setItem('moonDogeCheckpointUnlocks',JSON.stringify([...set]))}catch(e){}}
+function unlockCheckpoint(name){const u=loadCheckpointUnlocks();u.add(name);saveCheckpointUnlocks(u);return u}
+function unlockedCheckpointNames(){const u=loadCheckpointUnlocks();return ['EARTH',...CP_ORDER.filter(n=>u.has(n))]}
+function latestUnlockedCheckpoint(){const a=unlockedCheckpointNames();return a[a.length-1]||'EARTH'}
+function checkpointObjectLabel(type){return type==='cpMoon'?'LUNAR RELAY':type==='cpMars'?'MARS BEACON':type==='cpJupiter'?'JOVIAN GATE':'SATURN NODE'}
+function addCheckpointPads(){
+  for(const name of CP_ORDER){const c=CHECKPOINTS[name],y=cpWorldY(name);platforms.push({x:W/2-92,y,w:184,h:20,type:c.type,baseX:W/2-92,t:0,dead:false,angle:0,angVel:0,hits:0,rotation:0,checkpointName:name})}
+}
+function triggerCheckpointFx(name){checkpointFxName=name;checkpointFxTimer=1.45;zoomPulse=Math.max(zoomPulse,.28);tone(name==='MOON'?660:name==='MARS'?520:name==='JUPITER'?420:560,.14,.05,'triangle')}
+function checkpointIntroHTML(name){const c=CHECKPOINTS[name];return `<div class="card"><div class="cpTag">CHECKPOINT RE-ENTRY</div><h1 style="font-size:31px">${name}</h1><p><b>${c.intro}</b></p><p class="small">${c.sub}</p></div>`}
+function refreshSelectStartButton(){if(selectStartBtn)selectStartBtn.style.display=unlockedCheckpointNames().length>1?'inline-block':'none'}
+function showStartSelect(){
+  const unlocked=unlockedCheckpointNames();
+  overlay.innerHTML=`<div class="card"><div class="cpTag">MISSION SELECT</div><h1 style="font-size:31px">SELECT START</h1><p class="small">Unlocked checkpoints stay available on this device.</p><div class="startGrid">${unlocked.map(n=>`<button class="startChoice" data-start="${n}">${n}</button>`).join('')}</div><button id="startBack" class="menuSecondary">BACK</button></div>`;
+  overlay.style.display='grid';
+  overlay.querySelectorAll('.startChoice').forEach(b=>b.onclick=()=>begin(b.dataset.start));
+  $('startBack').onclick=renderMainMenu;
+}
+function renderMainMenu(){
+  const has=unlockedCheckpointNames().length>1;
+  overlay.innerHTML=`<div class="card"><h1>MOON DOGE</h1><p>NASA would not approve.</p><p class="small">Auto-jump · tilt to steer · BOOST in the air · survive the Solar System.</p><button id="menuLaunch">LAUNCH FROM EARTH</button>${has?'<button id="menuSelect" class="menuSecondary">SELECT START</button>':''}</div>`;
+  overlay.style.display='grid';state='menu';paused=false;
+  $('menuLaunch').onclick=()=>begin('EARTH');if(has)$('menuSelect').onclick=showStartSelect;
+}
+
 
 let state='menu',last=performance.now(),platforms=[],particles=[],hazards=[],pickups=[],stars=[],cameraY=0,nextSpawnY=0,highest=0,combo=0,steer=0,keySteer=0,motionEnabled=false;
 let boostReady=true,charging=false,boostCharge=0,boostId=null,shield=0,slowActive=0,hitCooldown=0,directorClock=10,wind=0,windTarget=0,windRamp=0,windTimer=0,warningTimer=0,currentZone='GROUND';
-let voyagerPassed=false,checkpoint='EARTH',runTime=0,nearMisses=0,dangerStreak=0,surfaceTimer=0,surfaceType='',turbulenceTimer=0,emergencyCooldown=0,eventCooldown=14,meteorRecoveryTimer=0,meteorDestroyed=0,meteorEventCap=2,paused=false,settingsWasPaused=false,panic=0,focusTimer=0,score=0,spins=0,birdsOffended=0,upsideTime=0,badDecisions=0,zoomPulse=0,lastGamma=0,voyagerBoarded=false;
+let voyagerPassed=false,checkpoint='EARTH',runTime=0,nearMisses=0,dangerStreak=0,surfaceTimer=0,surfaceType='',turbulenceTimer=0,emergencyCooldown=0,eventCooldown=14,meteorRecoveryTimer=0,meteorDestroyed=0,meteorEventCap=2,paused=false,settingsWasPaused=false,panic=0,focusTimer=0,score=0,spins=0,birdsOffended=0,upsideTime=0,badDecisions=0,zoomPulse=0,lastGamma=0,voyagerBoarded=false,runStart='EARTH',graceTimer=0,pendingCheckpoint='',pendingTimer=0,checkpointFxName='',checkpointFxTimer=0;
 const doge={x:0,y:0,w:54,h:52,vx:0,vy:0,rot:0,spin:0,faceTimer:0,abducted:0};
 const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,sy=y=>y-cameraY;
 function rr(x,y,w,h,r){r=Math.min(r,w/2,h/2);ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();ctx.fill()}
@@ -228,13 +274,22 @@ function loadRecords(){try{return JSON.parse(localStorage.getItem('moonDogeRecor
 function saveRecords(r){try{localStorage.setItem('moonDogeRecords',JSON.stringify(r))}catch(e){}}
 function updateRecord(name,value){let r=loadRecords();if(!r[name]||value>r[name]){r[name]=Math.floor(value);saveRecords(r)}}
 
-function reset(){
-  platforms=[];particles=[];hazards=[];pickups=[];stars=[];cameraY=0;nextSpawnY=0;highest=0;combo=0;steer=0;keySteer=0;boostReady=true;charging=false;boostCharge=0;
-  shield=0;slowActive=0;hitCooldown=0;directorClock=10;wind=0;windTarget=0;windRamp=0;windTimer=0;warningTimer=0;currentZone='GROUND';voyagerPassed=false;checkpoint='EARTH';runTime=0;nearMisses=0;dangerStreak=0;
+function reset(startName='EARTH'){
+  platforms=[];particles=[];hazards=[];pickups=[];stars=[];combo=0;steer=0;keySteer=0;boostReady=true;charging=false;boostCharge=0;
+  shield=0;slowActive=0;hitCooldown=0;directorClock=10;wind=0;windTarget=0;windRamp=0;windTimer=0;warningTimer=0;runStart=startName;checkpoint=startName;runTime=0;nearMisses=0;dangerStreak=0;
   surfaceTimer=0;surfaceType='';turbulenceTimer=0;emergencyCooldown=0;eventCooldown=14;panic=0;focusTimer=0;score=0;spins=0;birdsOffended=0;upsideTime=0;badDecisions=0;zoomPulse=0;voyagerBoarded=false;meteorRecoveryTimer=0;meteorDestroyed=0;meteorEventCap=2;
-  doge.x=W/2-27;doge.y=PLAY_H-154;doge.vx=0;doge.vy=0;doge.rot=0;doge.spin=0;doge.faceTimer=0;doge.abducted=0;
-  platforms.push({x:W/2-112,y:PLAY_H-72,w:224,h:22,type:'ground',baseX:W/2-112,t:0,dead:false,angle:0,angVel:0,hits:0});
-  nextSpawnY=PLAY_H-150;for(let i=0;i<50;i++)spawnPlatform();for(let i=0;i<150;i++)stars.push({x:Math.random()*W,y:Math.random()*PLAY_H,r:Math.random()*1.7+.2});updateBoostUI()
+  graceTimer=startName==='EARTH'?0:4.5;pendingCheckpoint='';pendingTimer=0;checkpointFxName='';checkpointFxTimer=0;voyagerPassed=false;
+  reachedCheckpoints=new Set();
+  const startAlt=startName==='EARTH'?0:CHECKPOINTS[startName].alt;
+  for(const n of CP_ORDER){if(startName!=='EARTH'&&CHECKPOINTS[n].alt<=startAlt)reachedCheckpoints.add(n)}
+  highest=startAlt;currentZone=zone(startAlt);
+  if(startName==='EARTH'){
+    cameraY=0;doge.x=W/2-27;doge.y=PLAY_H-154;doge.vx=0;doge.vy=0;doge.rot=0;doge.spin=0;doge.faceTimer=0;doge.abducted=0;
+    platforms.push({x:W/2-112,y:PLAY_H-72,w:224,h:22,type:'ground',baseX:W/2-112,t:0,dead:false,angle:0,angVel:0,hits:0});nextSpawnY=PLAY_H-150;
+  }else{
+    const padY=cpWorldY(startName);cameraY=padY-PLAY_H*.60;doge.x=W/2-27;doge.y=padY-52;doge.vx=0;doge.vy=0;doge.rot=0;doge.spin=0;doge.faceTimer=0;doge.abducted=0;nextSpawnY=padY-90;
+  }
+  addCheckpointPads();for(let i=0;i<54;i++)spawnPlatform();for(let i=0;i<150;i++)stars.push({x:Math.random()*W,y:Math.random()*PLAY_H,r:Math.random()*1.7+.2});updateBoostUI()
 }
 
 function ptype(z,r){
@@ -361,22 +416,22 @@ document.addEventListener('touchmove',e=>{
 document.addEventListener('touchend',()=>{if(touchFallback)steer=0},{passive:true});
 
 let starting=false;
-function begin(){
-  if(starting||state==='playing')return;
-  starting=true;
-  clearGameSelection();
-  // Start the game immediately. Gyro permission is requested from the same user gesture,
-  // but failure/slow permission UI must never block LAUNCH.
-  try{ensureAudio()}catch(e){}
-  try{requestMotion().catch(()=>{})}catch(e){}
-  overlay.style.display='none';
-  state='playing';paused=false;pausePanel.style.display='none';
-  reset();
-  setTimeout(()=>{if(state==='playing'&&!paused)autoBounce(1);starting=false},150);
+function begin(startName='EARTH'){
+  if(starting||state==='playing'||state==='intro')return;
+  starting=true;clearGameSelection();try{ensureAudio()}catch(e){}try{requestMotion().catch(()=>{})}catch(e){}
+  paused=false;pausePanel.style.display='none';reset(startName);
+  if(startName==='EARTH'){
+    overlay.style.display='none';state='playing';setTimeout(()=>{if(state==='playing'&&!paused)autoBounce(1);starting=false},150);
+  }else{
+    state='intro';overlay.innerHTML=checkpointIntroHTML(startName);overlay.style.display='grid';triggerCheckpointFx(startName);
+    setTimeout(()=>{overlay.style.display='none';state='playing';graceTimer=4.5;autoBounce(1);starting=false},1250);
+  }
 }
-playBtn.addEventListener('click',e=>{e.preventDefault();begin()});
+if(playBtn)playBtn.addEventListener('click',e=>{e.preventDefault();begin('EARTH')});
+if(selectStartBtn){refreshSelectStartButton();selectStartBtn.addEventListener('click',e=>{e.preventDefault();showStartSelect()})}
 
 function hit(px,py,power=1){
+  if(graceTimer>0){warn('RE-ENTRY PROTECTION',.25);return}
   if(hitCooldown>0)return;
   if(shield){shield=0;hitCooldown=.5;warn('SHIELD ABSORBED HIT',.65);return}
   doge.vx+=px*power;doge.vy+=py*power;hitCooldown=.62;combo=0;dangerStreak=0;comboEl.style.opacity=0;doge.faceTimer=1.1;doge.spin+=Math.sign(px||1)*rand(10,16);puff(doge.x+27,doge.y+26,18,'hit');tone(95,.08,.05,'square');if(Math.random()<.18)woof()
@@ -452,9 +507,9 @@ function meteorRecoveryPlatforms(){
 }
 
 function director(dt){
-  directorClock-=dt;eventCooldown-=dt;if(directorClock>0)return;
+  if(graceTimer>0)return;directorClock-=dt;eventCooldown-=dt;if(directorClock>0)return;
   let z=zone(highest),skill=clamp((combo+dangerStreak*.65)/8,0,1);
-  let base=runTime<18?3.5:z==='GROUND'?3.1:z==='CLOUDS'?2.75:z==='ATMOSPHERE'?2.4:z==='SATURN SYSTEM'&&highest>CFG.voyager*.82?1.35:z==='INTERSTELLAR'?1.7:2.0;
+  let base=(runStart==='EARTH'&&runTime<18)?3.5:z==='GROUND'?3.1:z==='CLOUDS'?2.75:z==='ATMOSPHERE'?2.4:z==='SATURN SYSTEM'&&highest>CFG.voyager*.82?1.35:z==='INTERSTELLAR'?1.7:2.0;
   directorClock=rand(base,base+1.45)-skill*.55;
   if(Math.random()<.24)pickupSpawn();
   const chaos=runTime>26&&(combo>=4||dangerStreak>=3||Math.random()<.28);
@@ -539,29 +594,33 @@ function updateHazards(dt){
 }
 function updatePickups(dt){for(const p of pickups){p.life-=dt;if(p.host&&!p.host.dead){p.x=p.host.x+p.host.w/2;p.y=p.host.y-30}let d=Math.hypot(doge.x+27-p.x,doge.y+26-p.y);if(d<29){if(p.type==='shield'){shield=1;warn('SHIELD ONLINE',.55)}else if(p.type==='slow'){slowActive=4.0;warn('TIME DILATION',.55)}else{boostReady=true;warn('BOOST REFILLED',.55)}p.life=0;updateBoostUI()}}pickups=pickups.filter(p=>p.life>0)}
 
-function checkpointLogic(){
-  if(highest>=CFG.moon&&checkpoint==='EARTH'){checkpoint='MOON';updateRecord('MOON',highest);warn('MOON CHECKPOINT',1.0)}
-  else if(highest>=CFG.mars&&checkpoint==='MOON'){checkpoint='MARS';updateRecord('MARS',highest);warn('MARS CHECKPOINT',1.0)}
-  else if(highest>=CFG.jupiter&&checkpoint==='MARS'){checkpoint='JUPITER';updateRecord('JUPITER',highest);warn('JUPITER CHECKPOINT',1.0)}
-  else if(highest>=CFG.saturn&&checkpoint==='JUPITER'){checkpoint='SATURN';updateRecord('SATURN',highest);warn('SATURN CHECKPOINT',1.0)}
-  else if(highest>=CFG.voyager&&!voyagerPassed){voyagerPassed=true;checkpoint='VOYAGER';warn('VOYAGER CONTACT',1.8);setTimeout(()=>{if(state==='playing'&&!voyagerBoarded){voyagerBoarded=true;state='voyager';updateRecord('VOYAGER',highest);overlay.innerHTML=`<div class="card"><h1>VOYAGER</h1><p>The probe opens a tiny hatch.<br>Doge gets in. Obviously.</p><p class="small">TO BE CONTINUED…</p><button id="retry">ONE MORE RUN</button></div>`;overlay.style.display='grid';$('retry').onclick=()=>{overlay.style.display='none';state='playing';paused=false;reset();setTimeout(()=>autoBounce(1),150)}}},1400)}
+function checkpointLogic(dt){
+  for(const name of CP_ORDER){
+    const c=CHECKPOINTS[name];
+    if(highest>=c.alt&&!reachedCheckpoints.has(name)){
+      reachedCheckpoints.add(name);pendingCheckpoint=name;pendingTimer=5.0;warn(`${name} CHECKPOINT CONTACT`,1.0);triggerCheckpointFx(name);break
+    }
+  }
+  if(pendingCheckpoint){
+    pendingTimer-=dt;
+    if(pendingTimer<=0){
+      const name=pendingCheckpoint;pendingCheckpoint='';pendingTimer=0;checkpoint=name;unlockCheckpoint(name);warn(`${name} CHECKPOINT SECURED`,1.25);triggerCheckpointFx(name);refreshSelectStartButton()
+    }
+  }
+  if(highest>=CFG.voyager&&!voyagerPassed){
+    voyagerPassed=true;checkpoint='VOYAGER';warn('VOYAGER CONTACT',1.8);setTimeout(()=>{if(state==='playing'&&!voyagerBoarded){voyagerBoarded=true;state='voyager';updateRecord('VOYAGER',highest);overlay.innerHTML=`<div class="card"><h1>VOYAGER</h1><p>The probe opens a tiny hatch.<br>Doge gets in. Obviously.</p><p class="small">TO BE CONTINUED…</p><button id="retry">ONE MORE RUN</button><button id="voyagerMenu" class="menuSecondary">MAIN MENU</button></div>`;overlay.style.display='grid';$('retry').onclick=()=>begin('EARTH');$('voyagerMenu').onclick=renderMainMenu}},1400)
+  }
 }
 function gameOver(){
-  state='gameover';updateRecord('BEST_ALTITUDE',highest);updateRecord(checkpoint,highest);
-  const r=loadRecords();
-  overlay.innerHTML=`<div class="card"><h1>MISSION FAILED</h1>
-  <p>Altitude: <b>${Math.floor(highest).toLocaleString()} m</b><br>Checkpoint: <b>${checkpoint}</b><br>Run: <b>${Math.floor(runTime)} s</b></p>
-  <p class="small">BEST ALT: ${(r.BEST_ALTITUDE||0).toLocaleString()} m<br>
-  Near misses: ${nearMisses} · Spins: ${Math.floor(spins)}<br>
-  Birds offended: ${birdsOffended} · Upside-down: ${upsideTime.toFixed(1)} s<br>
-  Bad decisions: ${badDecisions} · Score: ${Math.floor(score)}</p>
-  <button id="retry">RETRY</button></div>`;
-  overlay.style.display='grid';$('retry').onclick=()=>{overlay.style.display='none';state='playing';paused=false;pausePanel.style.display='none';reset();setTimeout(()=>autoBounce(1),150)}
+  state='gameover';const category=runStart==='EARTH'?'FULL_RUN_BEST':'CHECKPOINT_RUN_BEST';updateRecord(category,highest);const r=loadRecords();
+  const canContinue=checkpoint!=='EARTH'&&checkpoint!=='VOYAGER'&&loadCheckpointUnlocks().has(checkpoint);
+  overlay.innerHTML=`<div class="card"><h1>MISSION FAILED</h1><p>Altitude: <b>${Math.floor(highest).toLocaleString()} m</b><br>Checkpoint: <b>${checkpoint}</b><br>Run: <b>${Math.floor(runTime)} s</b></p><p class="small">${runStart==='EARTH'?'FULL RUN':'CHECKPOINT RUN'} BEST: ${(r[category]||0).toLocaleString()} m<br>Near misses: ${nearMisses} · Spins: ${Math.floor(spins)}<br>Birds offended: ${birdsOffended} · Upside-down: ${upsideTime.toFixed(1)} s<br>Bad decisions: ${badDecisions} · Score: ${Math.floor(score)}</p><button id="retryEarth">RETRY EARTH</button>${canContinue?`<button id="continueCp" class="menuSecondary">CONTINUE ${checkpoint}</button>`:''}<button id="gameMenu" class="menuSecondary">MAIN MENU</button></div>`;
+  overlay.style.display='grid';$('retryEarth').onclick=()=>begin('EARTH');if(canContinue)$('continueCp').onclick=()=>begin(checkpoint);$('gameMenu').onclick=renderMainMenu
 }
 
 function update(dt0){
   if(state!=='playing'||paused)return;
-  runTime+=dt0;if(hitCooldown>0)hitCooldown-=dt0;if(warningTimer>0){warningTimer-=dt0;if(warningTimer<=0)warningEl.style.opacity=0}
+  runTime+=dt0;if(graceTimer>0)graceTimer-=dt0;if(checkpointFxTimer>0)checkpointFxTimer-=dt0;if(hitCooldown>0)hitCooldown-=dt0;if(warningTimer>0){warningTimer-=dt0;if(warningTimer<=0)warningEl.style.opacity=0}
   if(doge.faceTimer>0)doge.faceTimer-=dt0;if(focusTimer>0)focusTimer-=dt0;if(zoomPulse>0)zoomPulse-=dt0;if(surfaceTimer>0)surfaceTimer-=dt0;if(turbulenceTimer>0)turbulenceTimer-=dt0;if(emergencyCooldown>0)emergencyCooldown-=dt0;if(slowActive>0)slowActive-=dt0;
   let dt=dt0*((slowActive>0||focusTimer>0)?.58:1);if(charging){boostCharge=clamp(boostCharge+dt0/CFG.boostTime,0,1);updateBoostUI()}
   let input=keySteer||steer;if(focusTimer>0)input*=1.08;let steerScale=surfaceType==='ice'&&surfaceTimer>0?.16:surfaceType==='sticky'&&surfaceTimer>0?.46:1;
@@ -643,13 +702,14 @@ function update(dt0){
   if(highest>=CFG.saturn){targ='VOYAGER';start=CFG.saturn;end=CFG.voyager}
   if(voyagerPassed){targ='???';start=CFG.voyager;end=CFG.voyager+350000}
   let pct=clamp((highest-start)/(end-start)*100,0,100);targetEl.innerHTML=`NEXT<br>${targ} ${Math.floor(pct)}%`;progressFill.style.width=pct+'%';
-  statusEl.textContent=`🛡 ${shield?'READY':'—'}　⏱ ${slowActive>0?slowActive.toFixed(1)+'s':'—'}　⚡ ${boostReady?'READY':'USED'}　DANGER ${dangerStreak||'—'}`;panic=clamp((Math.abs(doge.vx)/CFG.maxX)*.35+(dangerStreak/9)*.35+(windTimer>0?.2:0)+(hitCooldown>0?.25:0),0,1);panicFill.style.width=(panic*100)+'%';focusBadge.style.opacity=focusTimer>0?'1':'0';
+  statusEl.textContent=`🛡 ${shield?'READY':'—'}　⏱ ${slowActive>0?slowActive.toFixed(1)+'s':'—'}　⚡ ${boostReady?'READY':'USED'}　DANGER ${dangerStreak||'—'}`;graceBadge.style.opacity=graceTimer>0?'1':'0';if(graceTimer>0)graceBadge.textContent=`RE-ENTRY ${graceTimer.toFixed(1)}s`;panic=clamp((Math.abs(doge.vx)/CFG.maxX)*.35+(dangerStreak/9)*.35+(windTimer>0?.2:0)+(hitCooldown>0?.25:0),0,1);panicFill.style.width=(panic*100)+'%';focusBadge.style.opacity=focusTimer>0?'1':'0';
 
   while(nextSpawnY>cameraY-1850)spawnPlatform();platforms=platforms.filter(p=>!p.dead&&p.y<cameraY+PLAY_H+580);
-  director(dt0);updateHazards(dt);updatePickups(dt);checkpointLogic();
+  director(dt0);updateHazards(dt);updatePickups(dt);checkpointLogic(dt0);
   for(const q of particles){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=300*dt;q.life-=dt}particles=particles.filter(q=>q.life>0);
 
   if(doge.y-cameraY>PLAY_H+25&&emergencyCooldown<=0&&Math.random()<.05)emergencyPlatform();
+  if(graceTimer>0&&doge.y-cameraY>PLAY_H+55){doge.y=cameraY+PLAY_H*.63;doge.vy=-620;doge.vx=0}
   if(doge.y-cameraY>PLAY_H+92)gameOver()
 }
 
@@ -663,6 +723,7 @@ function drawPlatform(p,y){
   else if(t==='antigrav'){ctx.fillStyle='#998bff';rr(p.x,y,p.w,18,9);ctx.strokeStyle='#eeeaff';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x+p.w*.34,y+12);ctx.lineTo(p.x+p.w*.5,y+3);ctx.lineTo(p.x+p.w*.66,y+12);ctx.stroke()}
   else if(t==='gravitywell'){ctx.fillStyle='#24223c';rr(p.x,y,p.w,18,9);ctx.strokeStyle='#a690db';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x+p.w/2,y+9,6,0,7);ctx.arc(p.x+p.w/2,y+9,12,0,7);ctx.stroke()}
   else if(t==='turbulence'){ctx.fillStyle='#c7d7e8';rr(p.x,y,p.w,18,9);ctx.strokeStyle='#6f88a3';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x+10,y+9);ctx.bezierCurveTo(p.x+p.w*.35,y-3,p.x+p.w*.65,y+21,p.x+p.w-10,y+8);ctx.stroke()}
+  else if(['cpMoon','cpMars','cpJupiter','cpSaturn'].includes(t)){const fill=t==='cpMoon'?'#c8d0d8':t==='cpMars'?'#a85f45':t==='cpJupiter'?'#c8a66b':'#b9aa88';ctx.fillStyle=fill;rr(p.x,y,p.w,20,7);ctx.fillStyle='rgba(8,14,30,.78)';rr(p.x+8,y+5,p.w-16,10,4);ctx.fillStyle='#fff';ctx.font='900 9px sans-serif';ctx.textAlign='center';ctx.fillText(checkpointObjectLabel(t),p.x+p.w/2,y+14)}
   else if(t==='golden'){ctx.fillStyle='#ffd85a';rr(p.x,y,p.w,18,9);ctx.strokeStyle='#fff4b0';ctx.lineWidth=2;ctx.strokeRect(p.x+5,y+4,p.w-10,10)}
   else if(t==='emergency'){ctx.fillStyle='#ffda6a';rr(p.x,y,p.w,18,9);ctx.fillStyle='#594a19';ctx.font='900 10px sans-serif';ctx.textAlign='center';ctx.fillText('RECOVERY',p.x+p.w/2,y+13)}
   else if(['rock','asteroid','moonRock','marsRock','moonlet','tilt','rotator'].includes(t)){ctx.fillStyle=t==='marsRock'?'#a85f45':t==='moonlet'?'#bfc2cb':'#8f8178';ctx.beginPath();ctx.moveTo(p.x+8,y+4);ctx.lineTo(p.x+p.w*.20,y-6);ctx.lineTo(p.x+p.w*.62,y-3);ctx.lineTo(p.x+p.w-5,y+5);ctx.lineTo(p.x+p.w-12,y+18);ctx.lineTo(p.x+10,y+18);ctx.closePath();ctx.fill()}
@@ -688,6 +749,14 @@ function drawHazards(){
   }
 }
 function drawPickups(){for(const p of pickups){let y=sy(p.y);ctx.fillStyle=p.type==='shield'?'#8fdcff':p.type==='slow'?'#d8a7ff':'#ffe27a';ctx.beginPath();ctx.arc(p.x,y,p.r,0,7);ctx.fill();ctx.fillStyle='#fff';ctx.font='900 11px sans-serif';ctx.textAlign='center';ctx.fillText(p.type==='shield'?'S':p.type==='slow'?'T':'B',p.x,y+4)}}
+function drawCheckpointFx(){
+  if(checkpointFxTimer<=0)return;const t=clamp(checkpointFxTimer/1.45,0,1);ctx.save();ctx.globalAlpha=Math.sin((1-t)*Math.PI)*.55;
+  if(checkpointFxName==='MOON'){ctx.strokeStyle='#fff';ctx.lineWidth=4;ctx.beginPath();ctx.arc(W/2,PLAY_H*.38,45+(1-t)*85,0,Math.PI*2);ctx.stroke()}
+  else if(checkpointFxName==='MARS'){ctx.fillStyle='#cf7654';for(let i=0;i<18;i++){ctx.beginPath();ctx.arc((i*73+runTime*35)%W,PLAY_H*.28+Math.sin(i*2.1)*70,3+(i%4),0,Math.PI*2);ctx.fill()}}
+  else if(checkpointFxName==='JUPITER'){ctx.strokeStyle='#e6c36d';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(W*.18,PLAY_H*.25);ctx.lineTo(W*.42,PLAY_H*.36);ctx.lineTo(W*.34,PLAY_H*.43);ctx.lineTo(W*.73,PLAY_H*.52);ctx.stroke()}
+  else if(checkpointFxName==='SATURN'){ctx.strokeStyle='#dac58d';ctx.lineWidth=7;ctx.beginPath();ctx.ellipse(W/2,PLAY_H*.37,125+(1-t)*70,28+(1-t)*12,-.18,0,Math.PI*2);ctx.stroke()}
+  ctx.restore()
+}
 function drawDoge(){
   let x=doge.x,y=sy(doge.y);ctx.save();ctx.translate(x+27,y+26);ctx.rotate(doge.rot);ctx.scale(.98,doge.vy<0?1.07:1);
   ctx.strokeStyle='#d88943';ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.arc(21,2,11,-1.4,1.3);ctx.stroke();
@@ -712,12 +781,12 @@ function drawBackground(){
 function draw(){
   ctx.clearRect(0,0,W,H);ctx.save();let z=reducedMotion?1:1+(zoomPulse>0?0.025:0)+(focusTimer>0?0.012:0);ctx.translate(W/2,PLAY_H/2);ctx.scale(z,z);ctx.translate(-W/2,-PLAY_H/2);ctx.fillStyle='#050817';ctx.fillRect(0,0,W,H);drawBackground();
   for(const p of platforms){let y=sy(p.y);if(y<-110||y>PLAY_H+75)continue;drawPlatform(p,y)}
-  drawHazards();drawPickups();
+  drawHazards();drawPickups();drawCheckpointFx();
   for(const q of particles){ctx.globalAlpha=clamp(q.life*2.2,0,1);ctx.fillStyle=q.kind==='hit'?'#ffb0a0':q.kind==='fart'?'#b8d68b':'#fff';ctx.beginPath();ctx.arc(q.x,sy(q.y),q.r,0,7);ctx.fill()}ctx.globalAlpha=1;
   drawDoge();
   if(windTimer>0){ctx.globalAlpha=.28;ctx.strokeStyle='#fff';ctx.lineWidth=2.5;for(let i=0;i<11;i++){let yy=(i+1)*PLAY_H/12,len=90+Math.abs(Math.sin(runTime*2+i))*80;ctx.beginPath();ctx.moveTo(wind>0?5:W-5,yy);ctx.lineTo(wind>0?len:W-len,yy);ctx.stroke()}ctx.globalAlpha=1}
 }
-function loop(now){let dt=Math.min((now-last)/1000,.033);last=now;update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+function loop(now){let dt=Math.min((now-last)/1000,.033);last=now;update(dt);draw();requestAnimationFrame(loop)}renderMainMenu();requestAnimationFrame(loop);
 if('serviceWorker'in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 })();
 </script>

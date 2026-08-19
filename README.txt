@@ -1,9 +1,14 @@
-MOON DOGE — GYRO RESET + SPIN LANDING BALANCE
+MOON DOGE — CHECKPOINT SYSTEM
 
-- Settings: RESET GYRO & SENSITIVITY
-- Reset: gyro center = 0°, sensitivity = 1.0, steer = 0
-- Spin Landing side-kick only activates after 28 seconds
-- Messy Landing side-kick is much weaker
-- Every landing strongly re-stabilizes Shiba rotation
-- Normal jump spin is slightly calmer
-- Spin speed dissipates faster
+- Moon / Mars / Jupiter / Saturn checkpoints
+- checkpoint contact -> survive 5 seconds -> SECURED
+- secured unlocks persist in localStorage
+- planet-specific checkpoint pads and activation effects
+- SELECT START appears after first unlock
+- unlocked checkpoints selectable from main menu
+- checkpoint re-entry has planet-specific intro + 4.5s protection
+- RETRY EARTH is always the default retry
+- CONTINUE uses latest secured checkpoint as an explicit choice
+- MAIN MENU available after death
+- full-run vs checkpoint-run best altitude stored separately
+- Voyager remains reachable from checkpoint runs
