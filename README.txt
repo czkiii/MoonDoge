@@ -1,13 +1,12 @@
-Moon Doge
+MOON DOGE
 
-Mobile portrait PWA.
-Controls: automatic jump, tilt/gyroscope steering, hold/release BOOST.
+Portrait mobile PWA prototype.
 
-Current systems:
-- Moon / Mars / Jupiter / Saturn secured checkpoints and SELECT START
-- Full-run vs checkpoint-run records
-- Ambient NPC pass (procedural canvas art, no external assets): Shiba, repair robot, alien, UFO cat
-- Friendly robot can stabilize a platform and refill BOOST
-- UFO cat can follow or briefly cross in front as a non-damaging troublemaker
+Current build includes:
+- automatic jumping + gyro steering + charge/release BOOST
+- Moon / Mars / Jupiter / Saturn secured checkpoints + Select Start
+- ambient/friendly/troublemaker NPC pass
+- asset-free visual polish: zone-specific procedural backgrounds, 3-layer parallax stars, planet-specific platform families, landing particles, checkpoint structures, HUD polish, NPC palette tuning and rare background jokes
+- no external art assets
 
 Best played upright in portrait orientation.
