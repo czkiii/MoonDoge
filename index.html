@@ -86,6 +86,19 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
 .cpTag{font-size:10px;letter-spacing:1.5px;opacity:.62;margin-top:3px}
 #graceBadge{position:absolute;left:50%;top:228px;transform:translateX(-50%);font-size:10px;letter-spacing:1.1px;opacity:0;padding:5px 9px;border-radius:999px;background:rgba(75,155,225,.28);white-space:nowrap}
 
+#controlModeToggle{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.modeBtn{border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.06);color:#fff;border-radius:999px;padding:10px 7px;margin:0;min-width:0;font-size:11px}
+.modeBtn.active{background:#fff;color:#12213d}
+#joystickVisual{position:fixed;width:118px;height:118px;margin:-59px 0 0 -59px;border-radius:50%;border:2px solid rgba(255,255,255,.32);background:rgba(8,16,34,.26);box-shadow:inset 0 0 24px rgba(255,255,255,.05),0 8px 24px rgba(0,0,0,.22);pointer-events:none;z-index:6;display:none}
+#joystickKnob{position:absolute;width:56px;height:56px;left:31px;top:31px;border-radius:50%;background:rgba(255,255,255,.26);border:2px solid rgba(255,255,255,.62);box-shadow:0 4px 16px rgba(0,0,0,.24)}
+#controlHint{position:absolute;bottom:calc(var(--safe-b) + 10px);left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:1px;opacity:.55;white-space:nowrap;pointer-events:none}
+body.control-touch #boostWrap{display:none}
+body.control-touch #tiltVisual,body.control-joystick #tiltVisual{display:none}
+body.control-gyro #tiltVisual{display:block}
+body.control-touch #controlZone{height:12vh;background:linear-gradient(to bottom,rgba(6,10,24,0),rgba(6,10,24,.55))}
+body.control-touch #controlHint{bottom:var(--safe-b)}
+.settingMuted{opacity:.38;pointer-events:none}
+
 </style>
 </head>
 <body>
@@ -112,22 +125,25 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
     <div id="boost"><div id="boostCore" data-label="BOOST" aria-label="BOOST"></div></div>
   </div>
   <div id="tiltVisual"><div id="phoneIcon"></div><div id="tiltLabel">ATTITUDE CONTROL</div></div>
+  <div id="controlHint">TILT TO STEER</div>
 </div>
+<div id="joystickVisual"><div id="joystickKnob"></div></div>
 
 <div id="settingsPanel">
   <div class="panelCard">
     <h2>SETTINGS</h2>
     <div class="settingStack">
       <div class="toggleLine"><span>CONTROL SIDE</span><div class="handToggle"><button id="leftHandBtn" class="handBtn">LEFT</button><button id="rightHandBtn" class="handBtn">RIGHT</button></div></div>
-      <label>GYRO SENSITIVITY <input id="sensitivityRange" type="range" min="0.55" max="1.75" step="0.05" value="1"></label>
+      <div class="settingRow"><span>CONTROL MODE</span></div>
+      <div id="controlModeToggle"><button id="gyroModeBtn" class="modeBtn">GYRO</button><button id="joystickModeBtn" class="modeBtn">JOYSTICK</button><button id="touchModeBtn" class="modeBtn">TOUCH</button></div>
+      <label id="gyroSensitivityRow">GYRO SENSITIVITY <input id="sensitivityRange" type="range" min="0.55" max="1.75" step="0.05" value="1"></label>
       <div class="toggleLine"><span>AUDIO</span><button id="audioToggle" class="handBtn">ON</button></div>
-      <div class="toggleLine"><span>TOUCH FALLBACK</span><button id="touchToggle" class="handBtn">OFF</button></div>
       <div class="toggleLine"><span>REDUCED MOTION</span><button id="motionToggle" class="handBtn">OFF</button></div>
       <div class="toggleLine"><span>HIGH CONTRAST WARNINGS</span><button id="contrastToggle" class="handBtn">OFF</button></div>
       <div class="toggleLine"><span>LARGER UI</span><button id="largeUiToggle" class="handBtn">OFF</button></div>
-      <button id="calibrateBtn">CALIBRATE GYRO</button>
+      <div id="gyroSettingsBlock" class="settingStack"><button id="calibrateBtn">CALIBRATE GYRO</button>
       <button id="resetGyroBtn">RESET GYRO & SENSITIVITY</button>
-      <div id="calibrationReadout">CENTER: 0.0°</div>
+      <div id="calibrationReadout">CENTER: 0.0°</div></div>
     </div>
     <button id="settingsClose" class="panelClose">DONE</button>
   </div>
@@ -140,13 +156,13 @@ body.leftHanded #tiltVisual{right:22px;left:auto}
   </div>
 </div>
 
-<div id="overlay"><div class="card"><h1>MOON DOGE</h1><p>NASA would not approve.</p><p class="small">Auto-jump · tilt to steer · BOOST in the air · survive Earth, planets, storms, UFOs and whatever comes after Voyager.</p><button id="play">LAUNCH</button><button id="selectStart" class="menuSecondary">SELECT START</button></div></div>
+<div id="overlay"><div class="card"><h1>MOON DOGE</h1><p>NASA would not approve.</p><p class="small">Auto-jump · choose GYRO, JOYSTICK or TOUCH steering · BOOST through planets, storms, UFOs and whatever comes after Voyager.</p><button id="play">LAUNCH</button><button id="selectStart" class="menuSecondary">SELECT START</button></div></div>
 
 <script>
 (()=>{'use strict';
 const $=id=>document.getElementById(id),canvas=$('game'),ctx=canvas.getContext('2d');
 const altEl=$('alt'),targetEl=$('target'),comboEl=$('combo'),zoneName=$('zoneName'),warningEl=$('warning'),statusEl=$('status'),progressFill=$('progressFill'),panicFill=$('panicFill'),focusBadge=$('focusBadge'),graceBadge=$('graceBadge');
-const overlay=$('overlay'),playBtn=$('play'),selectStartBtn=$('selectStart'),boostWrap=$('boostWrap'),boostCore=$('boostCore'),boostProgress=$('boostProgress'),phoneIcon=$('phoneIcon'),settingsBtn=$('settingsBtn'),pauseBtn=$('pauseBtn'),settingsPanel=$('settingsPanel'),pausePanel=$('pausePanel'),settingsClose=$('settingsClose'),resumeBtn=$('resumeBtn'),leftHandBtn=$('leftHandBtn'),rightHandBtn=$('rightHandBtn'),sensitivityRange=$('sensitivityRange'),audioToggle=$('audioToggle'),touchToggle=$('touchToggle'),motionToggle=$('motionToggle'),contrastToggle=$('contrastToggle'),largeUiToggle=$('largeUiToggle'),calibrateBtn=$('calibrateBtn'),resetGyroBtn=$('resetGyroBtn'),calibrationReadout=$('calibrationReadout');
+const overlay=$('overlay'),playBtn=$('play'),selectStartBtn=$('selectStart'),boostWrap=$('boostWrap'),boostCore=$('boostCore'),boostProgress=$('boostProgress'),phoneIcon=$('phoneIcon'),settingsBtn=$('settingsBtn'),pauseBtn=$('pauseBtn'),settingsPanel=$('settingsPanel'),pausePanel=$('pausePanel'),settingsClose=$('settingsClose'),resumeBtn=$('resumeBtn'),leftHandBtn=$('leftHandBtn'),rightHandBtn=$('rightHandBtn'),sensitivityRange=$('sensitivityRange'),audioToggle=$('audioToggle'),motionToggle=$('motionToggle'),contrastToggle=$('contrastToggle'),largeUiToggle=$('largeUiToggle'),calibrateBtn=$('calibrateBtn'),resetGyroBtn=$('resetGyroBtn'),calibrationReadout=$('calibrationReadout'),gyroModeBtn=$('gyroModeBtn'),joystickModeBtn=$('joystickModeBtn'),touchModeBtn=$('touchModeBtn'),gyroSensitivityRow=$('gyroSensitivityRow'),gyroSettingsBlock=$('gyroSettingsBlock'),joystickVisual=$('joystickVisual'),joystickKnob=$('joystickKnob'),controlHint=$('controlHint');
 
 let W=innerWidth,H=innerHeight,DPR=Math.min(devicePixelRatio||1,2),CONTROL_H=Math.max(200,H*.22),PLAY_H=H-CONTROL_H;
 function resize(){W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,2);CONTROL_H=Math.max(200,H*.22);PLAY_H=H-CONTROL_H;document.documentElement.style.setProperty('--control-h',CONTROL_H+'px');canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
@@ -205,21 +221,35 @@ let handedness=safeGet('moonDogeHandedness','right');
 
 let sensitivity=parseFloat(safeGet('moonDogeSensitivity','1'))||1;
 let audioEnabled=safeGet('moonDogeAudio','1')==='1';
-let touchFallback=safeGet('moonDogeTouchFallback','0')==='1';
+let controlMode=safeGet('moonDogeControlMode','gyro');
+if(!['gyro','joystick','touch'].includes(controlMode))controlMode='gyro';
 let reducedMotion=safeGet('moonDogeReducedMotion','0')==='1';
 let highContrast=safeGet('moonDogeHighContrast','0')==='1';
 let largeUi=safeGet('moonDogeLargeUi','0')==='1';
 let gyroCenter=parseFloat(safeGet('moonDogeGyroCenter','0'))||0;
+let joystickPointer=null,joystickSteer=0,joystickOriginX=0,joystickOriginY=0;
+const touchPointers=new Map();let touchSteer=0,lastTouchTap=0,lastTouchTapX=0,lastTouchTapY=0;
 function applySettings(){
   sensitivityRange.value=String(sensitivity);
   audioToggle.textContent=audioEnabled?'ON':'OFF';audioToggle.classList.toggle('active',audioEnabled);
-  touchToggle.textContent=touchFallback?'ON':'OFF';touchToggle.classList.toggle('active',touchFallback);
   motionToggle.textContent=reducedMotion?'ON':'OFF';motionToggle.classList.toggle('active',reducedMotion);
   contrastToggle.textContent=highContrast?'ON':'OFF';contrastToggle.classList.toggle('active',highContrast);
   largeUiToggle.textContent=largeUi?'ON':'OFF';largeUiToggle.classList.toggle('active',largeUi);
   document.body.style.fontSize=largeUi?'112%':'100%';
   warningEl.style.filter=highContrast?'contrast(1.5) brightness(1.2)':'none';
   calibrationReadout.textContent=`CENTER: ${gyroCenter.toFixed(1)}°`;
+  gyroModeBtn.classList.toggle('active',controlMode==='gyro');
+  joystickModeBtn.classList.toggle('active',controlMode==='joystick');
+  touchModeBtn.classList.toggle('active',controlMode==='touch');
+  document.body.classList.toggle('control-gyro',controlMode==='gyro');
+  document.body.classList.toggle('control-joystick',controlMode==='joystick');
+  document.body.classList.toggle('control-touch',controlMode==='touch');
+  gyroSensitivityRow.classList.toggle('settingMuted',controlMode!=='gyro');
+  gyroSettingsBlock.classList.toggle('settingMuted',controlMode!=='gyro');
+  controlHint.textContent=controlMode==='gyro'?'TILT TO STEER':controlMode==='joystick'?'TOUCH + DRAG TO STEER':'HOLD LEFT / RIGHT · DOUBLE TAP BOOST';
+  if(controlMode!=='joystick'){joystickVisual.style.display='none';joystickPointer=null;joystickSteer=0}
+  if(controlMode!=='touch'){touchPointers.clear();touchSteer=0}
+  if(controlMode!=='gyro')steer=0;
 }
 
 function applyHandedness(){
@@ -280,7 +310,7 @@ function saveRecords(r){try{localStorage.setItem('moonDogeRecords',JSON.stringif
 function updateRecord(name,value){let r=loadRecords();if(!r[name]||value>r[name]){r[name]=Math.floor(value);saveRecords(r)}}
 
 function reset(startName='EARTH'){
-  platforms=[];particles=[];hazards=[];pickups=[];npcs=[];stars=[];combo=0;steer=0;keySteer=0;boostReady=true;charging=false;boostCharge=0;
+  platforms=[];particles=[];hazards=[];pickups=[];npcs=[];stars=[];combo=0;steer=0;keySteer=0;joystickSteer=0;touchSteer=0;joystickPointer=null;touchPointers.clear();joystickVisual.style.display='none';boostReady=true;charging=false;boostCharge=0;
   shield=0;slowActive=0;hitCooldown=0;directorClock=10;wind=0;windTarget=0;windRamp=0;windTimer=0;warningTimer=0;runStart=startName;checkpoint=startName;runTime=0;nearMisses=0;dangerStreak=0;
   surfaceTimer=0;surfaceType='';turbulenceTimer=0;emergencyCooldown=0;eventCooldown=14;panic=0;focusTimer=0;score=0;spins=0;birdsOffended=0;upsideTime=0;badDecisions=0;zoomPulse=0;voyagerBoarded=false;meteorRecoveryTimer=0;meteorDestroyed=0;meteorEventCap=2;
   graceTimer=startName==='EARTH'?0:4.5;pendingCheckpoint='';pendingTimer=0;checkpointFxName='';checkpointFxTimer=0;voyagerPassed=false;npcClock=startName==='EARTH'?8:5;lastNpcType='';npcSerial=0;
@@ -361,8 +391,40 @@ boostWrap.addEventListener('touchcancel',e=>{
   clearGameSelection();
   if(boostId==='touch')endBoost('touch');
 },{passive:false});
-function handleOrientation(e){if(!motionEnabled)return;const raw=typeof e.gamma==='number'?e.gamma:0;lastGamma=raw;const g=(raw-gyroCenter)*sensitivity,a=Math.abs(g);steer=a<CFG.tiltDeadzone?0:Math.sign(g)*clamp((a-CFG.tiltDeadzone)/(CFG.tiltMax-CFG.tiltDeadzone),0,1);phoneIcon.style.transform=`translate(-50%,-50%) rotate(${clamp(g,-18,18)}deg)`}
-async function requestMotion(){try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){if(await DeviceOrientationEvent.requestPermission()!=='granted')return false}motionEnabled=true;addEventListener('deviceorientation',handleOrientation,true);return true}catch(e){return false}}
+function handleOrientation(e){if(!motionEnabled||controlMode!=='gyro')return;const raw=typeof e.gamma==='number'?e.gamma:0;lastGamma=raw;const g=(raw-gyroCenter)*sensitivity,a=Math.abs(g);steer=a<CFG.tiltDeadzone?0:Math.sign(g)*clamp((a-CFG.tiltDeadzone)/(CFG.tiltMax-CFG.tiltDeadzone),0,1);phoneIcon.style.transform=`translate(-50%,-50%) rotate(${clamp(g,-18,18)}deg)`}
+let orientationBound=false;async function requestMotion(){try{if(controlMode!=='gyro')return false;if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'){if(await DeviceOrientationEvent.requestPermission()!=='granted')return false}motionEnabled=true;if(!orientationBound){addEventListener('deviceorientation',handleOrientation,true);orientationBound=true}return true}catch(e){return false}}
+function controlTargetBlocked(target){return !!(target?.closest&&target.closest('button,#settingsPanel,#pausePanel,#overlay,#boostWrap'))}
+function setJoystickVisual(x,y,dx=0){joystickVisual.style.left=x+'px';joystickVisual.style.top=y+'px';joystickVisual.style.display='block';joystickKnob.style.transform=`translateX(${dx}px)`}
+function refreshTouchSteer(){let sum=0;for(const dir of touchPointers.values())sum+=dir;touchSteer=clamp(sum,-1,1)}
+function touchInstantBoost(){if(state!=='playing'||paused||!boostReady)return;charging=false;boostCharge=0;boostId=null;doBoost(.82)}
+function setControlMode(mode){
+  if(!['gyro','joystick','touch'].includes(mode))return;
+  controlMode=mode;safeSet('moonDogeControlMode',mode);steer=0;joystickSteer=0;touchSteer=0;joystickPointer=null;touchPointers.clear();joystickVisual.style.display='none';
+  applySettings();
+  if(mode==='gyro'){try{if(controlMode==='gyro')requestMotion().catch(()=>{})}catch(e){}}
+}
+document.addEventListener('pointerdown',e=>{
+  if(state!=='playing'||paused||controlTargetBlocked(e.target))return;
+  if(controlMode==='joystick'){
+    if(joystickPointer!==null)return;joystickPointer=e.pointerId;joystickOriginX=e.clientX;joystickOriginY=e.clientY;joystickSteer=0;setJoystickVisual(joystickOriginX,joystickOriginY,0);try{e.target.setPointerCapture?.(e.pointerId)}catch(_){}e.preventDefault();
+  }else if(controlMode==='touch'){
+    const dir=e.clientX<W/2?-1:1;touchPointers.set(e.pointerId,dir);refreshTouchSteer();
+    const now=performance.now(),dist=Math.hypot(e.clientX-lastTouchTapX,e.clientY-lastTouchTapY);
+    if(now-lastTouchTap<300&&dist<105){touchInstantBoost();lastTouchTap=0}else{lastTouchTap=now;lastTouchTapX=e.clientX;lastTouchTapY=e.clientY}
+    e.preventDefault();
+  }
+},{passive:false});
+document.addEventListener('pointermove',e=>{
+  if(controlMode!=='joystick'||e.pointerId!==joystickPointer)return;
+  const radius=52,dx=clamp(e.clientX-joystickOriginX,-radius,radius);joystickSteer=dx/radius;setJoystickVisual(joystickOriginX,joystickOriginY,dx);e.preventDefault();
+},{passive:false});
+function releaseControlPointer(e){
+  if(e.pointerId===joystickPointer){joystickPointer=null;joystickSteer=0;joystickVisual.style.display='none'}
+  if(touchPointers.delete(e.pointerId))refreshTouchSteer();
+}
+document.addEventListener('pointerup',releaseControlPointer,{passive:true});
+document.addEventListener('pointercancel',releaseControlPointer,{passive:true});
+
 addEventListener('keydown',e=>{if(e.code==='ArrowLeft'||e.code==='KeyA')keySteer=-1;if(e.code==='ArrowRight'||e.code==='KeyD')keySteer=1;if(e.code==='Space'&&!charging)startBoost('kbd')});
 addEventListener('keyup',e=>{if(['ArrowLeft','KeyA','ArrowRight','KeyD'].includes(e.code))keySteer=0;if(e.code==='Space')endBoost('kbd')});
 
@@ -389,11 +451,13 @@ leftHandBtn.addEventListener('click',e=>{e.preventDefault();handedness='left';sa
 rightHandBtn.addEventListener('click',e=>{e.preventDefault();handedness='right';safeSet('moonDogeHandedness','right');applyHandedness()});
 sensitivityRange.addEventListener('input',()=>{sensitivity=parseFloat(sensitivityRange.value);safeSet('moonDogeSensitivity',String(sensitivity))});
 audioToggle.addEventListener('click',()=>{audioEnabled=!audioEnabled;safeSet('moonDogeAudio',audioEnabled?'1':'0');applySettings();if(audioEnabled)ensureAudio()});
-touchToggle.addEventListener('click',()=>{touchFallback=!touchFallback;safeSet('moonDogeTouchFallback',touchFallback?'1':'0');applySettings()});
+gyroModeBtn.addEventListener('click',e=>{e.preventDefault();setControlMode('gyro')});
+joystickModeBtn.addEventListener('click',e=>{e.preventDefault();setControlMode('joystick')});
+touchModeBtn.addEventListener('click',e=>{e.preventDefault();setControlMode('touch')});
 motionToggle.addEventListener('click',()=>{reducedMotion=!reducedMotion;safeSet('moonDogeReducedMotion',reducedMotion?'1':'0');applySettings()});
 contrastToggle.addEventListener('click',()=>{highContrast=!highContrast;safeSet('moonDogeHighContrast',highContrast?'1':'0');applySettings()});
 largeUiToggle.addEventListener('click',()=>{largeUi=!largeUi;safeSet('moonDogeLargeUi',largeUi?'1':'0');applySettings()});
-calibrateBtn.addEventListener('click',()=>{gyroCenter=lastGamma;safeSet('moonDogeGyroCenter',String(gyroCenter));applySettings();warn('GYRO CALIBRATED',.5)});
+calibrateBtn.addEventListener('click',()=>{if(controlMode!=='gyro')return;gyroCenter=lastGamma;safeSet('moonDogeGyroCenter',String(gyroCenter));applySettings();warn('GYRO CALIBRATED',.5)});
 resetGyroBtn.addEventListener('click',()=>{
   gyroCenter=0;
   sensitivity=1;
@@ -409,22 +473,11 @@ resumeBtn.addEventListener('click',e=>{e.preventDefault();setPaused(false)});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&state==='playing'&&!paused)setPaused(true)});
 applyHandedness();applySettings();
 
-document.addEventListener('touchmove',e=>{
-  if(!touchFallback||state!=='playing'||paused)return;
-  for(const t of e.touches){
-    if(t.clientY<PLAY_H){
-      const dx=(t.clientX-W/2)/(W/2);
-      steer=clamp(dx,-1,1);
-      break;
-    }
-  }
-},{passive:true});
-document.addEventListener('touchend',()=>{if(touchFallback)steer=0},{passive:true});
 
 let starting=false;
 function begin(startName='EARTH'){
   if(starting||state==='playing'||state==='intro')return;
-  starting=true;clearGameSelection();try{ensureAudio()}catch(e){}try{requestMotion().catch(()=>{})}catch(e){}
+  starting=true;clearGameSelection();try{ensureAudio()}catch(e){}try{if(controlMode==='gyro')requestMotion().catch(()=>{})}catch(e){}
   paused=false;pausePanel.style.display='none';reset(startName);
   if(startName==='EARTH'){
     overlay.style.display='none';state='playing';setTimeout(()=>{if(state==='playing'&&!paused)autoBounce(1);starting=false},150);
@@ -699,7 +752,7 @@ function update(dt0){
   runTime+=dt0;if(graceTimer>0)graceTimer-=dt0;if(checkpointFxTimer>0)checkpointFxTimer-=dt0;if(hitCooldown>0)hitCooldown-=dt0;if(warningTimer>0){warningTimer-=dt0;if(warningTimer<=0)warningEl.style.opacity=0}
   if(doge.faceTimer>0)doge.faceTimer-=dt0;if(focusTimer>0)focusTimer-=dt0;if(zoomPulse>0)zoomPulse-=dt0;if(surfaceTimer>0)surfaceTimer-=dt0;if(turbulenceTimer>0)turbulenceTimer-=dt0;if(emergencyCooldown>0)emergencyCooldown-=dt0;if(slowActive>0)slowActive-=dt0;
   let dt=dt0*((slowActive>0||focusTimer>0)?.58:1);if(charging){boostCharge=clamp(boostCharge+dt0/CFG.boostTime,0,1);updateBoostUI()}
-  let input=keySteer||steer;if(focusTimer>0)input*=1.08;let steerScale=surfaceType==='ice'&&surfaceTimer>0?.16:surfaceType==='sticky'&&surfaceTimer>0?.46:1;
+  let modeSteer=controlMode==='joystick'?joystickSteer:controlMode==='touch'?touchSteer:steer;let input=keySteer||modeSteer;if(focusTimer>0)input*=1.08;let steerScale=surfaceType==='ice'&&surfaceTimer>0?.16:surfaceType==='sticky'&&surfaceTimer>0?.46:1;
   let turbulence=turbulenceTimer>0?rand(-430,430):0;
   const edgeDist=Math.min(doge.x+18,W-(doge.x+doge.w)+18);
   const edgeWindScale=clamp(edgeDist/115,.28,1);
