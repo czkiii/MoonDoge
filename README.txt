@@ -1,14 +1,13 @@
-MOON DOGE — CHECKPOINT SYSTEM
+Moon Doge
 
-- Moon / Mars / Jupiter / Saturn checkpoints
-- checkpoint contact -> survive 5 seconds -> SECURED
-- secured unlocks persist in localStorage
-- planet-specific checkpoint pads and activation effects
-- SELECT START appears after first unlock
-- unlocked checkpoints selectable from main menu
-- checkpoint re-entry has planet-specific intro + 4.5s protection
-- RETRY EARTH is always the default retry
-- CONTINUE uses latest secured checkpoint as an explicit choice
-- MAIN MENU available after death
-- full-run vs checkpoint-run best altitude stored separately
-- Voyager remains reachable from checkpoint runs
+Mobile portrait PWA.
+Controls: automatic jump, tilt/gyroscope steering, hold/release BOOST.
+
+Current systems:
+- Moon / Mars / Jupiter / Saturn secured checkpoints and SELECT START
+- Full-run vs checkpoint-run records
+- Ambient NPC pass (procedural canvas art, no external assets): Shiba, repair robot, alien, UFO cat
+- Friendly robot can stabilize a platform and refill BOOST
+- UFO cat can follow or briefly cross in front as a non-damaging troublemaker
+
+Best played upright in portrait orientation.
